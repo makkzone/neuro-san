@@ -127,7 +127,7 @@ class AsyncHttpServiceAgentSession(AbstractHttpServiceAgentSession, AsyncAgentSe
 
                             # Grab a single line
                             line: bytes = accumulator[:index]
-                            unicode_line = line.decode('utf-8')
+                            unicode_line = line.decode("utf-8")
                             if unicode_line.strip():    # Skip empty lines
 
                                 # We have a line with something in it.
@@ -143,7 +143,7 @@ class AsyncHttpServiceAgentSession(AbstractHttpServiceAgentSession, AsyncAgentSe
 
                     # If there is anything left in the accumulator, yield it
                     if len(accumulator) > 0:
-                        result_dict = json.loads(accumulator.decode('utf-8'))
+                        result_dict = json.loads(accumulator.decode("utf-8"))
                         yield result_dict
 
         except (asyncio.TimeoutError, ClientOSError) as exc:
