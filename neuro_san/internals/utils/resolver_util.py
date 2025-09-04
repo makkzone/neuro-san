@@ -45,7 +45,33 @@ class ResolverUtil:
         return class_type
 
     @staticmethod
-    def create_type_tuple(type_dict: Dict[str, str]) -> Tuple[Type[Any], ...]:
+    def create_type_tuple(type_list: List[str]) -> Tuple[Type[Any], ...]:
+        """
+        Creates a tuple of class types for use in isinstance(obj, <tuple_of_types>)
+        situations.
+
+        :param type_list: A list of fully qualified names of the types to create
+                          (not class instances) to the string name of the package to install
+                          if the class is not found.
+        :return: A tuple of the class types that could be resolved.
+                Can return an empty tuple if nothing in the type_list could be resolved
+        """
+
+        if not type_list:
+            return ()
+
+        tuple_list: List[Type[Any]] = []
+        for class_name in type_list:
+
+            # Try to resolve the single type and append to list if we get it.
+            one_type: Type[Any] = ResolverUtil.create_type(class_name, install_if_missing=None)
+            if one_type is not None:
+                tuple_list.append(one_type)
+
+        return tuple(tuple_list)
+
+    @staticmethod
+    def create_type_tuple_from_dict(type_dict: Dict[str, str]) -> Tuple[Type[Any], ...]:
         """
         Creates a tuple of class types for use in isinstance(obj, <tuple_of_types>)
         situations.
@@ -62,7 +88,7 @@ class ResolverUtil:
         if not type_dict:
             return ()
 
-        type_list: List[Type[Any]] = []
+        tuple_list: List[Type[Any]] = []
         for class_name, install_if_missing in type_dict.items():
 
             # Allow for values that are empty strings
@@ -72,6 +98,6 @@ class ResolverUtil:
             # Try to resolve the single type and append to list if we get it.
             one_type: Type[Any] = ResolverUtil.create_type(class_name, install_if_missing)
             if one_type is not None:
-                type_list.append(one_type)
+                tuple_list.append(one_type)
 
-        return tuple(type_list)
+        return tuple(tuple_list)

@@ -48,6 +48,12 @@ from neuro_san.internals.utils.resolver_util import ResolverUtil
 # See: https://docs.python.org/3/library/contextvars.html
 ORIGIN_INFO: ContextVar[str] = ContextVar('origin_info', default=None)
 
+# Keep a single lazy resolution of OpenAI chat model types.
+OPENAI_CHAT_TYPES: Tuple[Type[Any], ...] = ResolverUtil.create_type_tuple({
+                                                "langchain_openai.chat_models.base.ChatOpenAI",
+                                                "langchain_openai.chat_models.azure.AzureChatOpenAI",
+                                           })
+
 
 class LangChainTokenCounter:
     """
@@ -57,12 +63,6 @@ class LangChainTokenCounter:
     Notes as to how each BaseLanguageModel/BaseChatModel should be configured
     are in get_callback_for_llm()
     """
-
-    # Class variable to keep a single lazy resolution of OpenAI chat model types.
-    OPENAI_CHAT_TYPES: Tuple[Type[Any], ...] = ResolverUtil.create_type_tuple({
-                                                    "langchain_openai.chat_models.base.ChatOpenAI": None,
-                                                    "langchain_openai.chat_models.azure.AzureChatOpenAI": None,
-                                                })
 
     def __init__(self, llm: BaseLanguageModel,
                  invocation_context: InvocationContext,
@@ -204,7 +204,7 @@ class LangChainTokenCounter:
                 from "usage_metadata" but give "total_cost" = 0.
         """
 
-        if isinstance(llm, LangChainTokenCounter.OPENAI_CHAT_TYPES):
+        if isinstance(llm, OPENAI_CHAT_TYPES):
             # Use the context manager to count tokens as per
             #   https://python.langchain.com/docs/how_to/llm_token_usage_tracking/#using-callbacks
             # Notes:
@@ -235,7 +235,7 @@ class LangChainTokenCounter:
                 If not an OpenAI or Anthropic model, use llm_token_callback_var.
         """
 
-        if isinstance(llm, LangChainTokenCounter.OPENAI_CHAT_TYPES):
+        if isinstance(llm, OPENAI_CHAT_TYPES):
             return openai_callback_var
 
         # Collect tokens for models other than OpenAI
