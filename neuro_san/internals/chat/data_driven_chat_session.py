@@ -13,6 +13,8 @@ from typing import Any
 from typing import Dict
 from typing import Iterator
 from typing import List
+from typing import Tuple
+from typing import Type
 from typing import Union
 
 import copy
@@ -21,8 +23,6 @@ import traceback
 from logging import getLogger
 from logging import Logger
 from inspect import iscoroutinefunction
-
-from openai import BadRequestError
 
 from neuro_san.internals.chat.async_collating_queue import AsyncCollatingQueue
 from neuro_san.internals.chat.chat_history_message_processor import ChatHistoryMessageProcessor
@@ -36,9 +36,15 @@ from neuro_san.internals.messages.agent_framework_message import AgentFrameworkM
 from neuro_san.internals.messages.base_message_dictionary_converter import BaseMessageDictionaryConverter
 from neuro_san.internals.run_context.factory.run_context_factory import RunContextFactory
 from neuro_san.internals.run_context.interfaces.run_context import RunContext
+from neuro_san.internals.utils.resolver_util import ResolverUtil
 from neuro_san.message_processing.message_processor import MessageProcessor
 from neuro_san.message_processing.answer_message_processor import AnswerMessageProcessor
 from neuro_san.message_processing.structure_message_processor import StructureMessageProcessor
+
+
+PATIENCE_ERRORS: Tuple[Type[Any], ...] = ResolverUtil.create_type_tuple([
+                                            "openai.BadRequestError",
+                                         ])
 
 
 # pylint: disable=too-many-instance-attributes
@@ -129,7 +135,7 @@ class DataDrivenChatSession:
             #       messages from downstream agents.
             raw_messages: List[Any] = await self.front_man.submit_message(user_input)
 
-        except BadRequestError:
+        except PATIENCE_ERRORS:
             # This can happen if the user is trying to send a new message
             # while it is still working on a previous message that has not
             # yet returned.
