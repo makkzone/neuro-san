@@ -17,6 +17,8 @@ from typing import Any
 from typing import Dict
 from typing import List
 
+from langchain_core.messages.base import BaseMessage
+
 from neuro_san.internals.interfaces.invocation_context import InvocationContext
 from neuro_san.internals.journals.journal import Journal
 from neuro_san.internals.run_context.interfaces.agent_spec_provider import AgentSpecProvider
@@ -61,7 +63,7 @@ class RunContext(AgentSpecProvider):
         """
         raise NotImplementedError
 
-    async def get_response(self) -> List[Any]:
+    async def get_response(self) -> List[BaseMessage]:
         """
         :return: The list of messages from the instance's thread.
         """

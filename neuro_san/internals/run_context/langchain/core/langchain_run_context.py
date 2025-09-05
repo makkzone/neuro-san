@@ -550,7 +550,7 @@ class LangChainRunContext(RunContext):
         # Chat history is updated in write_message
         await self.journal.write_message(return_message)
 
-    async def get_response(self) -> List[Any]:
+    async def get_response(self) -> List[BaseMessage]:
         """
         :return: The list of messages from the instance's thread.
         """

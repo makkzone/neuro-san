@@ -24,6 +24,8 @@ from logging import getLogger
 from logging import Logger
 from inspect import iscoroutinefunction
 
+from langchain_core.messages.base import BaseMessage
+
 from leaf_common.config.resolver_util import ResolverUtil
 
 from neuro_san.internals.chat.async_collating_queue import AsyncCollatingQueue
@@ -134,13 +136,13 @@ class DataDrivenChatSession:
         try:
             # DEF - drill further down for iterator from here to enable getting
             #       messages from downstream agents.
-            raw_messages: List[Any] = await self.front_man.submit_message(user_input)
+            raw_messages: List[BaseMessage] = await self.front_man.submit_message(user_input)
 
         except PATIENCE_ERRORS:
             # This can happen if the user is trying to send a new message
             # while it is still working on a previous message that has not
             # yet returned.
-            raw_messages: List[Any] = [
+            raw_messages: List[BaseMessage] = [
                 AgentFrameworkMessage(content="Patience, please. I'm working on it.")
             ]
 

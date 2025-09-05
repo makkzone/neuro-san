@@ -16,6 +16,8 @@ from typing import List
 import json
 import uuid
 
+from langchain_core.messages.base import BaseMessage
+
 from leaf_common.parsers.field_extractor import FieldExtractor
 
 from neuro_san.internals.graph.activations.argument_assigner import ArgumentAssigner
@@ -91,14 +93,14 @@ class BranchActivation(CallingActivation, CallableActivation):
         # and the list of available tools.
         return agent_spec.get("command")
 
-    async def integrate_callable_response(self, run: Run, messages: List[Any]) -> List[Any]:
+    async def integrate_callable_response(self, run: Run, messages: List[BaseMessage]) -> List[BaseMessage]:
         """
         :param run: The Run for the prescriptor (if any)
         :param messages: A current list of messages for the component.
         :return: An updated list of messages after this operation is done.
                 This default implementation is just a pass-through of the messages argument.
         """
-        new_messages: List[Any] = messages
+        new_messages: List[BaseMessage] = messages
 
         callable_tool_names: List[str] = self.get_callable_tool_names(self.agent_tool_spec)
         if callable_tool_names is None:
@@ -137,7 +139,7 @@ class BranchActivation(CallingActivation, CallableActivation):
         run: Run = await self.run_context.submit_message(assignments)
         run = await self.run_context.wait_on_run(run, self.journal)
 
-        messages: List[Any] = await self.run_context.get_response()
+        messages: List[BaseMessage] = await self.run_context.get_response()
 
         messages = await self.integrate_callable_response(run, messages)
 
