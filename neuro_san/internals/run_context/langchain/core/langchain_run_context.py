@@ -557,10 +557,15 @@ class LangChainRunContext(RunContext):
         # Not sure if this is the right thing, as this will be langchain-y stuff.
         return self.chat_history
 
-    async def submit_tool_outputs(self, run: Run, tool_outputs: List[Any]) -> Run:
+    async def submit_tool_outputs(self, run: Run, tool_outputs: List[Dict[str, Any]]) -> Run:
         """
         :param run: The Run handling the execution of the agent
         :param tool_outputs: The tool outputs to submit
+                The component dictionaries can have the following keys:
+                    "origin"        A List of origin dictionaries indicating the origin of the run.
+                    "output"        A string representing the output of the tool call
+                    "sly_data"      Optional sly_data dictionary that might have returned from an external tool.
+                    "tool_call_id"  The string id of the tool_call being executed
         :return: A potentially updated run handle
         """
         if tool_outputs is not None and len(tool_outputs) > 0:
