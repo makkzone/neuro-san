@@ -106,8 +106,6 @@ class LangChainRunContext(RunContext):
         :param chat_context: A ChatContext dictionary that contains all the state necessary
                 to carry on a previous conversation, possibly from a different server.
         """
-        # This block contains top candidates for state storage that needs to be
-        # retained when session_ids go away.
         self.chat_history: List[BaseMessage] = []
         self.journal: OriginatingJournal = None
         self.llm: BaseLanguageModel = None
