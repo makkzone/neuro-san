@@ -118,8 +118,9 @@ class DirectAgentSession(AgentSession):
         connectivity_info: List[Dict[str, Any]] = reporter.report_network_connectivity()
         response_dict = {
             "connectivity_info": connectivity_info,
-            "metadata": metadata,
         }
+        if metadata is not None:
+            response_dict["metadata"] = metadata
 
         return response_dict
 
