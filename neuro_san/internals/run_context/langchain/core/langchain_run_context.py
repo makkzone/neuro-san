@@ -393,7 +393,7 @@ class LangChainRunContext(RunContext):
         # Contruct a human message out of the text of the user message
         # Don't add this to the chat history yet.
         try:
-            self.recent_human_message = HumanMessage(user_message)
+            self.recent_human_message = user_message
         except ValidationError as exception:
             full_name: str = Origination.get_full_name_from_origin(self.origin)
             message = f"ValidationError in {full_name} with message: {user_message}"
