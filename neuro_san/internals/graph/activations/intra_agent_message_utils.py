@@ -10,7 +10,6 @@
 #
 # END COPYRIGHT
 
-from typing import Any
 from typing import Dict
 from typing import List
 from typing import Type
@@ -46,83 +45,65 @@ class IntraAgentMessageUtils:
     """
 
     @staticmethod
-    def generate_response(the_messages: List[Any]) -> str:
+    def generate_response(the_messages: List[BaseMessage]) -> str:
         """
         :param the_messages: A list of messages. Could be OpenAI or langchain messages.
         :return: a JSON-ification of the list of messages.
         """
-        response_list = []
+        response_list: List[Dict[str, str]] = []
+
+        index: int = 0
+        one_message: BaseMessage = None
         for index, one_message in enumerate(the_messages):
+
             # Duplicate the role message before every tool response role message
             role: str = IntraAgentMessageUtils._get_role(one_message)
             if role == "tool" and index > 0:
-                previous_message = the_messages[index - 1]
+                previous_message: BaseMessage = the_messages[index - 1]
                 previous_role: str = IntraAgentMessageUtils._get_role(previous_message)
                 if previous_role == "assistant":
-                    new_message = {
+                    new_message: Dict[str, str] = {
                         "role": previous_role,
                         "content": IntraAgentMessageUtils._get_content(previous_message)
                     }
                     response_list.append(new_message)
 
-            message_dict = {
+            message_dict: Dict[str, str] = {
                 "role": role,
                 "content": IntraAgentMessageUtils._get_content(one_message)
             }
             response_list.append(message_dict)
 
-        return json.dumps(response_list)
+        response_str: str = json.dumps(response_list)
+        return response_str
 
     @staticmethod
-    def _get_role(message: Any) -> str:
+    def _get_role(message: BaseMessage) -> str:
         """
         :param message: Either an OpenAI message or a langchain BaseMessage
         :return: A string describing the role of the message
         """
 
-        if hasattr(message, "role"):
-            return message.role
-
         # Check the look-up table above
-        role: str = IntraAgentMessageUtils._message_to_role(message)
+        base_message_type: Type[BaseMessage] = type(message)
+        role: str = _MESSAGE_TYPE_TO_ROLE.get(base_message_type)
         if role is not None:
             return role
 
         raise ValueError(f"Don't know how to handle message type {message.__class__.__name__}")
 
     @staticmethod
-    def _get_content(message: Any) -> str:
+    def _get_content(message: BaseMessage) -> str:
         """
         :param message: Either an OpenAI message or a langchain BaseMessage
         :return: A string describing the content of the message
         """
 
-        if isinstance(message, BaseMessage):
-            # For OpenAI and Ollama, content of AI message is a string but content from
-            # Anthropic AI message can either be a single string or a list of content blocks.
-            # If it is a list, "text" is a key of a dictionary which is the first element of
-            # the list. For more details: https://python.langchain.com/docs/integrations/chat/anthropic/#content-blocks
-            content: Union[str, List] = message.content
-            if isinstance(content, list):
-                content = content[0].get("text", "")
-            return content
-
-        if hasattr(message, "content"):
-            if not any(message.content):
-                return ""
-            return message.content[0].text.value
-
-        raise ValueError(f"Don't know how to handle message type {message.__class__.__name__}")
-
-    @staticmethod
-    def _message_to_role(base_message: BaseMessage) -> str:
-        """
-        This role stuff will be removed when the Logs() API is removed,
-        as the ChatMessageType and grpc definitions make it redundant.
-
-        :param base_message: A base message instance
-        :return: The role string corresponding to the base_message
-        """
-        base_message_type: Type[BaseMessage] = type(base_message)
-        role: str = _MESSAGE_TYPE_TO_ROLE.get(base_message_type)
-        return role
+        # For OpenAI and Ollama, content of AI message is a string but content from
+        # Anthropic AI message can either be a single string or a list of content blocks.
+        # If it is a list, "text" is a key of a dictionary which is the first element of
+        # the list. For more details: https://python.langchain.com/docs/integrations/chat/anthropic/#content-blocks
+        content: Union[str, List] = message.content
+        if isinstance(content, list):
+            content = content[0].get("text", "")
+        return content
