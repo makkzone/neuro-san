@@ -440,7 +440,7 @@ class LangChainRunContext(RunContext):
 
         inputs = {
             "chat_history": previous_chat_history,
-            "input": self.recent_human_message
+            "input": self.recent_human_message.content
         }
 
         # Create the list of callbacks to pass when invoking
