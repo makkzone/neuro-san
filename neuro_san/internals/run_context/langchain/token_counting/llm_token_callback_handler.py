@@ -43,65 +43,6 @@ CLASS_TABLE = {
 }
 
 
-def get_anthropic_bedrock_token_cost(
-        model_name: str,
-        num_tokens: int,
-        token_type: Literal["completion", "prompt"] = "prompt"
-) -> float:
-    """
-    Calculate token cost for Anthropic/Bedrock models from the lookup table with unified logic.
-    :param model_name: Anthorpic model to calculate the cost
-    :param num_tokens: Amount of tokens
-    :param token_type: Type of token, either "prompt" (input) or "completion" (output)
-    :return: Token cost
-    """
-
-    # Normalize model name for lookup
-    normalized_model: str = _normalize_model_name(model_name)
-
-    # Find matching model in cost tables
-    # matching_models = [model for model in MODEL_COST_PER_1K_INPUT_TOKENS if normalized_model in model]
-    matching_models: List[str] = []
-    for model in MODEL_COST_PER_1K_INPUT_TOKENS:
-        if normalized_model in model:
-            matching_models.append(model)
-
-    if not matching_models:
-        error_msg = f"Unknown model: {model_name}. Known models: {', '.join(MODEL_COST_PER_1K_INPUT_TOKENS.keys())}"
-        logging.warning(error_msg)
-        raise ValueError(error_msg)
-
-    if len(matching_models) > 1:
-        error_msg = f"Ambiguous model name '{model_name}'. Matches: {', '.join(matching_models)}"
-        logging.warning(error_msg)
-        raise ValueError(error_msg)
-
-    # Calculate cost
-    full_model_id: str = matching_models[0]
-    if token_type == "prompt":
-        cost_table: Dict[str, float] = MODEL_COST_PER_1K_INPUT_TOKENS
-    else:
-        cost_table = MODEL_COST_PER_1K_OUTPUT_TOKENS
-
-    return (num_tokens / 1000) * cost_table[full_model_id]
-
-
-def _normalize_model_name(model_name: str) -> str:
-    """
-    Normalize model name for consistent lookup across Bedrock and Anthropic formats.
-    :param model_name: Full name or id of Anthropic LLM
-    :return: Name for checking in the lookup table
-    """
-    if "anthropic" in model_name:
-        # For Bedrock: extract base model from cross-region inference profile
-        # e.g., 'us.anthropic.claude-3-sonnet' -> 'anthropic.claude-3-sonnet'
-        parts = model_name.split(".")
-        if len(parts) >= 2:
-            return ".".join(parts[-2:])
-
-    return model_name
-
-
 # pylint: disable=too-many-ancestors
 # pylint: disable=too-many-instance-attributes
 class LlmTokenCallbackHandler(AsyncCallbackHandler):
@@ -321,7 +262,7 @@ class LlmTokenCallbackHandler(AsyncCallbackHandler):
         :return: Token cost
         """
         try:
-            return get_anthropic_bedrock_token_cost(model_name, num_tokens, token_type)
+            return self._get_anthropic_bedrock_token_cost(model_name, num_tokens, token_type)
         except ValueError:
             return None
 
@@ -338,3 +279,61 @@ class LlmTokenCallbackHandler(AsyncCallbackHandler):
             "total_cost": 0.0,
             "time_taken_in_seconds": 0.0
         }
+
+    def _get_anthropic_bedrock_token_cost(
+            self,
+            model_name: str,
+            num_tokens: int,
+            token_type: Literal["completion", "prompt"] = "prompt"
+    ) -> float:
+        """
+        Calculate token cost for Anthropic/Bedrock models from the lookup table with unified logic.
+        :param model_name: Anthorpic model to calculate the cost
+        :param num_tokens: Amount of tokens
+        :param token_type: Type of token, either "prompt" (input) or "completion" (output)
+        :return: Token cost
+        """
+
+        # Normalize model name for lookup
+        normalized_model: str = self._normalize_model_name(model_name)
+
+        # Find matching model in cost tables
+        # matching_models = [model for model in MODEL_COST_PER_1K_INPUT_TOKENS if normalized_model in model]
+        matching_models: List[str] = []
+        for model in MODEL_COST_PER_1K_INPUT_TOKENS:
+            if normalized_model in model:
+                matching_models.append(model)
+
+        if not matching_models:
+            error_msg = f"Unknown model: {model_name}. Known models: {', '.join(MODEL_COST_PER_1K_INPUT_TOKENS.keys())}"
+            logging.warning(error_msg)
+            raise ValueError(error_msg)
+
+        if len(matching_models) > 1:
+            error_msg = f"Ambiguous model name '{model_name}'. Matches: {', '.join(matching_models)}"
+            logging.warning(error_msg)
+            raise ValueError(error_msg)
+
+        # Calculate cost
+        full_model_id: str = matching_models[0]
+        if token_type == "prompt":
+            cost_table: Dict[str, float] = MODEL_COST_PER_1K_INPUT_TOKENS
+        else:
+            cost_table = MODEL_COST_PER_1K_OUTPUT_TOKENS
+
+        return (num_tokens / 1000) * cost_table[full_model_id]
+
+    def _normalize_model_name(self, model_name: str) -> str:
+        """
+        Normalize model name for consistent lookup across Bedrock and Anthropic formats.
+        :param model_name: Full name or id of Anthropic LLM
+        :return: Name for checking in the lookup table
+        """
+        if "anthropic" in model_name:
+            # For Bedrock: extract base model from cross-region inference profile
+            # e.g., 'us.anthropic.claude-3-sonnet' -> 'anthropic.claude-3-sonnet'
+            parts = model_name.split(".")
+            if len(parts) >= 2:
+                return ".".join(parts[-2:])
+
+        return model_name
