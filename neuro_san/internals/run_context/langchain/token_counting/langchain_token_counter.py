@@ -14,8 +14,6 @@ from typing import Any
 from typing import Awaitable
 from typing import Dict
 from typing import List
-from typing import Tuple
-from typing import Type
 from typing import Union
 
 from asyncio import Task
@@ -29,8 +27,6 @@ from langchain_core.callbacks.base import BaseCallbackHandler
 from langchain_core.language_models.base import BaseLanguageModel
 
 from leaf_common.asyncio.asyncio_executor import AsyncioExecutor
-from leaf_common.config.resolver_util import ResolverUtil
-
 from neuro_san.internals.interfaces.context_type_llm_factory import ContextTypeLlmFactory
 from neuro_san.internals.interfaces.invocation_context import InvocationContext
 from neuro_san.internals.journals.originating_journal import OriginatingJournal
@@ -44,12 +40,6 @@ from neuro_san.internals.run_context.langchain.token_counting.get_llm_token_call
 # and we want to be sure these are in sync.
 # See: https://docs.python.org/3/library/contextvars.html
 ORIGIN_INFO: ContextVar[str] = ContextVar('origin_info', default=None)
-
-# Keep a single lazy resolution of OpenAI chat model types.
-OPENAI_CHAT_TYPES: Tuple[Type[Any], ...] = ResolverUtil.create_type_tuple([
-                                                "langchain_openai.chat_models.base.ChatOpenAI",
-                                                "langchain_openai.chat_models.azure.AzureChatOpenAI",
-                                           ])
 
 
 class LangChainTokenCounter:
@@ -182,8 +172,14 @@ class LangChainTokenCounter:
         models_token_dict: Dict[str, Any] = \
             self._merge_dicts(token_accounting.get("models_token_dict", {}), callback.models_token_dict)
         network_token_dict: Dict[str, Any] = self._sum_all_tokens(models_token_dict, time_taken_in_seconds)
+        # Provide sligtly different "caveats" for the network token accounting.
+        network_token_dict["caveats"] = [
+            "Subnetwork (external agent) token usage is not included.",
+            "Token counts are approximate and estimated using tiktoken.",
+            "time_taken_in_seconds includes overhead from Langchain and Neuro-SAN"
+        ]
         request_reporting["token_accounting"] = \
-            {"network_token_dict": network_token_dict, "models_token_dict": models_token_dict}
+            {**network_token_dict, "models": models_token_dict}
 
         # Token counting results are collected in the callback.
         # Create a token counting dictionary for each agent
