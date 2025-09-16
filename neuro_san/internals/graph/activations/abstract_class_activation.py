@@ -101,13 +101,13 @@ class AbstractClassActivation(AbstractCallableActivation):
         raise NotImplementedError
 
     # pylint: disable=too-many-locals
-    async def build(self) -> List[BaseMessage]:
+    async def build(self) -> BaseMessage:
         """
         Main entry point to the class.
 
-        :return: A List of BaseMessages produced during this process.
+        :return: A BaseMessage produced during this process.
         """
-        messages: List[BaseMessage] = []
+        message: BaseMessage = None
 
         full_class_ref: str = self.get_full_class_ref()
         self.logger.info("Calling class %s", full_class_ref)
@@ -208,9 +208,8 @@ Some hints:
         # Change the result into a message
         retval_str: str = f"{retval}"
         message = AIMessage(content=retval_str)
-        messages.append(message)
 
-        return messages
+        return message
 
     async def attempt_invoke(self, coded_tool: CodedTool, arguments: Dict[str, Any], sly_data: Dict[str, Any]) \
             -> Any:

@@ -570,21 +570,20 @@ class LangChainRunContext(RunContext):
         """
         if tool_outputs is not None and len(tool_outputs) > 0:
             for tool_output in tool_outputs:
-                tool_messages: List[BaseMessage] = self.parse_tool_output(tool_output)
-                if tool_messages is not None:
-                    for tool_message in tool_messages:
-                        # Chat history is updated in write_message()
-                        await self.journal.write_message(tool_message)
+                tool_message: BaseMessage = self.parse_tool_output(tool_output)
+                if tool_message is not None:
+                    # Chat history is updated in write_message()
+                    await self.journal.write_message(tool_message)
 
         # Create a run to return
         run = LangChainRun(self.run_id_base, self.chat_history)
 
         return run
 
-    def parse_tool_output(self, tool_output: Dict[str, Any]) -> List[BaseMessage]:
+    def parse_tool_output(self, tool_output: Dict[str, Any]) -> BaseMessage:
         """
         Parse a single tool_output dictionary for its results
-        :return: A list of messages representing the output from the tool.
+        :return: A message representing the output from the tool.
         """
 
         # Get a Message for each output and add to the chat history.
@@ -627,8 +626,7 @@ class LangChainRunContext(RunContext):
             # It's possible we might need to run a SlyDataRedactor against from_download.sly_data on this.
             self.tool_caller.sly_data.update(tool_sly_data)
 
-        return_messages: List[BaseMessage] = [tool_message]
-        return return_messages
+        return tool_message
 
     def parse_tool_chat_list_string(self, tool_chat_list_string: str, origin: str) -> BaseMessage:
         """

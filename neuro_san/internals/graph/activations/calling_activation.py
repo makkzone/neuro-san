@@ -221,13 +221,13 @@ context with which it will proces input, essentially telling it what to do.
             self.factory.create_agent_activation(self.run_context, our_agent_spec, use_tool_name,
                                                  self.sly_data, tool_arguments)
 
-        message_list: List[BaseMessage] = await callable_component.build()
+        message: BaseMessage = await callable_component.build()
 
         # Prepare the tool output
         tool_output: Dict[str, Any] = {
             "origin": callable_component.get_origin(),
             "tool_call_id": component_tool_call.get_id(),
-            "output": message_list,
+            "output": message,
             # Add the component's sly_data to the mix.
             # External tools have separate dictionaries of redacted sly_data that need to
             # be reintegrated with the single copy that floats around the agent network.
@@ -243,10 +243,10 @@ context with which it will proces input, essentially telling it what to do.
 
         return tool_output
 
-    async def build(self) -> List[BaseMessage]:
+    async def build(self) -> BaseMessage:
         """
         Main entry point to the class.
 
-        :return: A List of BaseMessages produced during this process.
+        :return: A BaseMessage produced during this process.
         """
         raise NotImplementedError
