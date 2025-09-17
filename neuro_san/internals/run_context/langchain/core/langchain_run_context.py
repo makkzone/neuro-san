@@ -13,6 +13,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Tuple
+from typing import Type
 from typing import Union
 
 import json
@@ -22,9 +23,6 @@ import uuid
 from copy import copy
 from logging import Logger
 from logging import getLogger
-
-from openai import APIError as OpenAI_APIError
-from anthropic import APIError as Anthropic_APIError
 
 from pydantic_core import ValidationError
 
@@ -41,7 +39,8 @@ from langchain_core.messages.system import SystemMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import Runnable
 from langchain_core.tools import BaseTool
-from langchain_google_genai.chat_models import ChatGoogleGenerativeAIError
+
+from leaf_common.config.resolver_util import ResolverUtil
 
 from neuro_san.internals.errors.error_detector import ErrorDetector
 from neuro_san.internals.interfaces.async_agent_session_factory import AsyncAgentSessionFactory
@@ -73,6 +72,13 @@ from neuro_san.internals.run_context.utils.external_tool_adapter import External
 
 MINUTES: float = 60.0
 
+# Lazily import specific errors from llm providers
+API_ERROR_TYPES: Tuple[Type[Any], ...] = ResolverUtil.create_type_tuple([
+                                            "openai.APIError",
+                                            "anthropic.APIError",
+                                            "langchain_google_genai.chat_models.ChatGoogleGenerativeAIError",
+                                         ])
+
 
 # pylint: disable=too-many-instance-attributes
 class LangChainRunContext(RunContext):
@@ -101,8 +107,6 @@ class LangChainRunContext(RunContext):
         :param chat_context: A ChatContext dictionary that contains all the state necessary
                 to carry on a previous conversation, possibly from a different server.
         """
-        # This block contains top candidates for state storage that needs to be
-        # retained when session_ids go away.
         self.chat_history: List[BaseMessage] = []
         self.journal: OriginatingJournal = None
         self.llm: BaseLanguageModel = None
@@ -476,7 +480,7 @@ class LangChainRunContext(RunContext):
 
         inputs = {
             "chat_history": previous_chat_history,
-            "input": self.recent_human_message
+            "input": self.recent_human_message.content
         }
 
         # Create the list of callbacks to pass when invoking
@@ -526,7 +530,7 @@ class LangChainRunContext(RunContext):
         while return_dict is None and retries > 0:
             try:
                 return_dict: Dict[str, Any] = await agent_executor.ainvoke(inputs, invoke_config)
-            except (OpenAI_APIError, Anthropic_APIError, ChatGoogleGenerativeAIError) as api_error:
+            except API_ERROR_TYPES as api_error:
                 backtrace = traceback.format_exc()
                 message: str = None
                 if not ApiKeyErrorCheck.check_for_internal_error(backtrace):
@@ -586,17 +590,22 @@ class LangChainRunContext(RunContext):
         # Chat history is updated in write_message
         await self.journal.write_message(return_message)
 
-    async def get_response(self) -> List[Any]:
+    async def get_response(self) -> List[BaseMessage]:
         """
         :return: The list of messages from the instance's thread.
         """
         # Not sure if this is the right thing, as this will be langchain-y stuff.
         return self.chat_history
 
-    async def submit_tool_outputs(self, run: Run, tool_outputs: List[Any]) -> Run:
+    async def submit_tool_outputs(self, run: Run, tool_outputs: List[Dict[str, Any]]) -> Run:
         """
         :param run: The Run handling the execution of the agent
         :param tool_outputs: The tool outputs to submit
+                The component dictionaries can have the following keys:
+                    "origin"        A List of origin dictionaries indicating the origin of the run.
+                    "output"        A string representing the output of the tool call
+                    "sly_data"      Optional sly_data dictionary that might have returned from an external tool.
+                    "tool_call_id"  The string id of the tool_call being executed
         :return: A potentially updated run handle
         """
         if tool_outputs is not None and len(tool_outputs) > 0:

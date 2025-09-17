@@ -26,12 +26,13 @@ from timedinput import timedinput
 from grpc import RpcError
 from grpc import StatusCode
 
+from leaf_common.config.file_of_class import FileOfClass
+
 from neuro_san.client.agent_session_factory import AgentSessionFactory
 from neuro_san.client.concierge_session_factory import ConciergeSessionFactory
 from neuro_san.client.streaming_input_processor import StreamingInputProcessor
 from neuro_san.interfaces.agent_session import AgentSession
 from neuro_san.interfaces.concierge_session import ConciergeSession
-from neuro_san.internals.utils.file_of_class import FileOfClass
 
 
 class AgentCli:
@@ -82,6 +83,13 @@ class AgentCli:
         empty_list: List[Dict[str, Any]] = []
         for connectivity_info in response.get("connectivity_info", empty_list):
             print(f"{json.dumps(connectivity_info, indent=4, sort_keys=True)}")
+
+        metadata = response.get("metadata")
+        metadata_str: str = "<None>"
+        if metadata is not None:
+            metadata_str = json.dumps(metadata, indent=4, sort_keys=True)
+
+        print(f"\nNetwork Metadata: {metadata_str}")
 
     def chat(self):
         """
