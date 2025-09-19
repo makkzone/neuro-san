@@ -17,7 +17,6 @@ from neuro_san.coded_tools.math_guy.async_closeable import AsyncCloseable
 from neuro_san.coded_tools.math_guy.sync_closeable import SyncCloseable
 from neuro_san.interfaces.agent_network_progress_reporter import AgentNetworkProgressReporter
 from neuro_san.interfaces.coded_tool import CodedTool
-from neuro_san.internals.messages.agent_progress_message import AgentProgressMessage
 
 
 class Calculator(CodedTool):
@@ -78,8 +77,7 @@ class Calculator(CodedTool):
             # Nothing yet.
             "progress": 0.0
         }
-        progress_message = AgentProgressMessage(structure=progress)
-        await progress_reporter.async_report_progress(progress_message)
+        await progress_reporter.async_report_progress(progress)
 
         x = float(x)
         y = float(y)
@@ -107,7 +105,6 @@ class Calculator(CodedTool):
 
         # All done.
         progress["progress"] = 1.0
-        progress_message = AgentProgressMessage(structure=progress)
-        await progress_reporter.async_report_progress(progress_message)
+        await progress_reporter.async_report_progress(progress)
 
         return "Check sly_data['equals'] for the result"

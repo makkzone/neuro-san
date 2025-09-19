@@ -9,6 +9,8 @@
 # neuro-san SDK Software in commercial settings.
 #
 # END COPYRIGHT
+from typing import Any
+from typing import Dict
 
 from neuro_san.interfaces.agent_network_progress_reporter import AgentNetworkProgressReporter
 from neuro_san.internals.journals.journal import Journal
@@ -29,16 +31,23 @@ class ProgressJournal(AgentNetworkProgressReporter):
         """
         self.wrapped_journal: Journal = wrapped_journal
 
-    async def async_report_progress(self, message: AgentProgressMessage):
+    async def async_report_progress(self, progress: Dict[str, Any], content: str = ""):
         """
-        Reports an AgentProgressMessage to the chat message stream returned to the client.
+        Reports the structure and optional message to the chat message stream returned to the client
         To be used from within CodedTool.async_invoke().
 
-        :param message: The AgentProgressMessage instance to write to the journal
+        :param structure: The Dictionary instance to write as progress.
+                        All keys and values must be JSON-serializable.
+        :param content: An optional message to send to the client
         """
-        if message is None:
+        if progress is None:
+            # Nothing to report
             return
-        if not isinstance(message, AgentProgressMessage):
-            raise ValueError(f"Expected AgentProgressMessage, got {type(message)}")
+        if not isinstance(progress, Dict):
+            raise ValueError(f"Expected dictionary, got {type(progress)}")
 
+        if content is None:
+            content = ""
+
+        message = AgentProgressMessage(content, structure=progress)
         await self.wrapped_journal.write_message(message)
