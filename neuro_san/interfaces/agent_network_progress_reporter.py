@@ -38,6 +38,6 @@ class AgentNetworkProgressReporter:
 
         :param structure: The Dictionary instance to write as progress.
                         All keys and values must be JSON-serializable.
-        :param message: An optional message to send to the client
+        :param content: An optional message to send to the client
         """
         raise NotImplementedError

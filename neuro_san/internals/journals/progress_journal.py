@@ -31,7 +31,7 @@ class ProgressJournal(AgentNetworkProgressReporter):
         """
         self.wrapped_journal: Journal = wrapped_journal
 
-    async def async_report_progress(self, progress: Dict[str, Any], content: str = ""):
+    async def async_report_progress(self, structure: Dict[str, Any], content: str = ""):
         """
         Reports the structure and optional message to the chat message stream returned to the client
         To be used from within CodedTool.async_invoke().
