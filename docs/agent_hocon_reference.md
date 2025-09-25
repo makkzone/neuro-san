@@ -663,15 +663,15 @@ external networks to the client, and that is what this key is for.
 
 There are several forms this key can take which have varying levels of control:
 
-* boolean - true/false value that controls whether or not to forward messages from
+- boolean - true/false value that controls whether or not to forward messages from
             any and all downstream external agents.  The default is false.
-* string - a string value that represents a single external agent reference
+- string - a string value that represents a single external agent reference
            (as it appears in the tool list) whose messages should be forwarded.
            This is akin to turning on the boolean value to true for a single agent.
-* list of strings - a list of external agent references (as they appear in the tool list)
+- list of strings - a list of external agent references (as they appear in the tool list)
            whose messages should be forwarded.  This is akin to turning on the boolean value
            to true for multiple agents.
-* dictionary - a dictionary whose keys are external agent references (as they
+- dictionary - a dictionary whose keys are external agent references (as they
            appear in the tool list) and whose values are boolean values that control
            whether or not to forward messages from that agent.
 
