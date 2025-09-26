@@ -19,7 +19,6 @@ import os
 import json
 import logging
 
-from pathlib import Path
 from pyparsing.exceptions import ParseException
 from pyparsing.exceptions import ParseSyntaxException
 
