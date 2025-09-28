@@ -26,6 +26,7 @@ from leaf_common.persistence.interface.restorer import Restorer
 
 from neuro_san.interfaces.agent_name_mapper import AgentNameMapper
 from neuro_san.internals.graph.persistence.agent_filetree_mapper import AgentFileTreeMapper
+from neuro_san.internals.graph.persistence.agent_standalone_mapper import AgentStandaloneMapper
 from neuro_san.internals.graph.filters.defaults_config_filter import DefaultsConfigFilter
 from neuro_san.internals.graph.filters.dictionary_common_defs_config_filter \
     import DictionaryCommonDefsConfigFilter
@@ -52,7 +53,10 @@ class AgentNetworkRestorer(Restorer):
         self.registry_dir: str = registry_dir
         self.agent_mapper = agent_mapper
         if not self.agent_mapper:
-            self.agent_mapper = AgentFileTreeMapper()
+            if self.registry_dir is not None:
+                self.agent_mapper = AgentFileTreeMapper()
+            else:
+                self.agent_mapper = AgentStandaloneMapper()
 
     def restore(self, file_reference: str = None):
         """
@@ -93,9 +97,6 @@ syntactically incorrect in that file.
         #           the calls to Pathlib/__file__ as a valid means to resolve
         #           these kinds of issues.
         name = self.agent_mapper.filepath_to_agent_network_name(file_reference)
-
-        print(f">>>>>>>>>>>>>>>>>>>AGENT: {name}")
-
         agent_network: AgentNetwork = self.restore_from_config(name, config)
         return agent_network
 

@@ -136,7 +136,7 @@ your current working directory (pwd).
 
                 file_of_class = FileOfClass(manifest_file)
                 manifest_dir: str = file_of_class.get_basis()
-                registry_restorer = AgentNetworkRestorer(manifest_dir)
+                registry_restorer = AgentNetworkRestorer(registry_dir=manifest_dir, agent_mapper=self.agent_mapper)
                 try:
                     agent_network: AgentNetwork = registry_restorer.restore(file_reference=agent_filepath)
                 except FileNotFoundError as exc:
