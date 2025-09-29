@@ -32,4 +32,5 @@ class AgentFileTreeMapper(AgentNameMapper):
         Converts a file path to agent definition file (relative to registry root directory)
         to agent network name identifying it to the service.
         """
+        # Remove file name extension, leave everything else in place.
         return str(Path(filepath).with_suffix(""))

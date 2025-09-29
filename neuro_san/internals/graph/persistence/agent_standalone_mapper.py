@@ -32,4 +32,6 @@ class AgentStandaloneMapper(AgentNameMapper):
         Converts a file path to agent standalone definition file
         to agent network name identifying it to the service.
         """
+        # Take the file name only - with no file path, and no file name extension:
+        # /root/file_path/my_agent.hocon => my_agent
         return str(Path(filepath).stem)
