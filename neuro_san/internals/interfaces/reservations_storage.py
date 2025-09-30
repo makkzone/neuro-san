@@ -13,7 +13,7 @@ from __future__ import annotations
 from typing import Any
 from typing import Dict
 
-from neuro_san.internals.interfaces.reservation import Reservation
+from neuro_san.interfaces.reservation import Reservation
 
 
 class ReservationsStorage:

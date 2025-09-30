@@ -13,7 +13,7 @@ from typing import Dict
 
 from leaf_common.serialization.interface.dictionary_converter import DictionaryConverter
 
-from neuro_san.internals.interfaces.reservation import Reservation
+from neuro_san.interfaces.reservation import Reservation
 
 
 class ReservationDictionaryConverter(DictionaryConverter):

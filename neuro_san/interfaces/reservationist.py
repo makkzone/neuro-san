@@ -14,7 +14,7 @@ from typing import Dict
 
 from asyncio import Event
 
-from neuro_san.internals.interfaces.reservation import Reservation
+from neuro_san.interfaces.reservation import Reservation
 
 
 class Reservationist:

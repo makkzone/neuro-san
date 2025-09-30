@@ -17,8 +17,8 @@ from typing import Union
 from asyncio import Event
 from time import time
 
-from neuro_san.internals.interfaces.reservation import Reservation
-from neuro_san.internals.interfaces.reservationist import Reservationist
+from neuro_san.interfaces.reservation import Reservation
+from neuro_san.interfaces.reservationist import Reservationist
 from neuro_san.internals.interfaces.reservations_storage import ReservationsStorage
 from neuro_san.internals.reservations.agent_reservation import AgentReservation
 

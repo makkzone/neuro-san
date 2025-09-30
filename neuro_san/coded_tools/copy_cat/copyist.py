@@ -15,10 +15,10 @@ from typing import Dict
 
 from neuro_san import REGISTRIES_DIR
 from neuro_san.interfaces.coded_tool import CodedTool
+from neuro_san.interfaces.reservation import Reservation
 from neuro_san.internals.graph.activations.branch_activation import BranchActivation
 from neuro_san.internals.graph.persistence.agent_network_restorer import AgentNetworkRestorer
 from neuro_san.internals.graph.registry.agent_network import AgentNetwork
-from neuro_san.internals.interfaces.reservation import Reservation
 from neuro_san.internals.reservations.reservation_util import ReservationUtil
 
 

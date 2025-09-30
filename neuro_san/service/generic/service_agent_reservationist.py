@@ -16,9 +16,9 @@ from typing import Union
 from asyncio import Event
 from asyncio import get_running_loop
 
+from neuro_san.interfaces.reservation import Reservation
+from neuro_san.interfaces.reservationist import Reservationist
 from neuro_san.internals.chat.async_collating_queue import AsyncCollatingQueue
-from neuro_san.internals.interfaces.reservation import Reservation
-from neuro_san.internals.interfaces.reservationist import Reservationist
 from neuro_san.internals.reservations.agent_reservation import AgentReservation
 
 

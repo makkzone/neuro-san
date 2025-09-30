@@ -14,7 +14,7 @@ from uuid import uuid4
 
 from os import environ
 
-from neuro_san.internals.interfaces.reservation import Reservation
+from neuro_san.interfaces.reservation import Reservation
 
 
 class AgentReservation(Reservation):

@@ -28,6 +28,7 @@ from langchain_core.messages.base import BaseMessage
 
 from leaf_common.config.resolver_util import ResolverUtil
 
+from neuro_san.interfaces.reservationist import Reservationist
 from neuro_san.internals.chat.async_collating_queue import AsyncCollatingQueue
 from neuro_san.internals.chat.chat_history_message_processor import ChatHistoryMessageProcessor
 from neuro_san.internals.graph.registry.agent_network import AgentNetwork
@@ -35,7 +36,6 @@ from neuro_san.internals.graph.registry.agent_tool_registry import AgentToolRegi
 from neuro_san.internals.graph.activations.sly_data_redactor import SlyDataRedactor
 from neuro_san.internals.interfaces.front_man import FrontMan
 from neuro_san.internals.interfaces.invocation_context import InvocationContext
-from neuro_san.internals.interfaces.reservationist import Reservationist
 from neuro_san.internals.journals.journal import Journal
 from neuro_san.internals.messages.agent_framework_message import AgentFrameworkMessage
 from neuro_san.internals.messages.base_message_dictionary_converter import BaseMessageDictionaryConverter

@@ -15,8 +15,8 @@ from typing import List
 
 import time
 
+from neuro_san.interfaces.reservation import Reservation
 from neuro_san.internals.graph.registry.agent_network import AgentNetwork
-from neuro_san.internals.interfaces.reservation import Reservation
 from neuro_san.internals.interfaces.reservations_storage import ReservationsStorage
 from neuro_san.internals.network_providers.agent_network_storage import AgentNetworkStorage
 

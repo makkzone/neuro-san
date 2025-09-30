@@ -15,11 +15,11 @@ from typing import Dict
 
 from leaf_common.asyncio.asyncio_executor import AsyncioExecutor
 
+from neuro_san.interfaces.reservationist import Reservationist
 from neuro_san.internals.chat.async_collating_queue import AsyncCollatingQueue
 from neuro_san.internals.interfaces.async_agent_session_factory import AsyncAgentSessionFactory
 from neuro_san.internals.interfaces.context_type_toolbox_factory import ContextTypeToolboxFactory
 from neuro_san.internals.interfaces.context_type_llm_factory import ContextTypeLlmFactory
-from neuro_san.internals.interfaces.reservationist import Reservationist
 from neuro_san.internals.journals.journal import Journal
 from neuro_san.internals.messages.origination import Origination
 

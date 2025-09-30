@@ -27,11 +27,11 @@ from leaf_common.config.resolver import Resolver
 from leaf_common.parsers.dictionary_extractor import DictionaryExtractor
 
 from neuro_san.interfaces.coded_tool import CodedTool
+from neuro_san.interfaces.reservationist import Reservationist
 from neuro_san.internals.graph.activations.abstract_callable_activation import AbstractCallableActivation
 from neuro_san.internals.graph.activations.branch_activation import BranchActivation
 from neuro_san.internals.graph.interfaces.agent_tool_factory import AgentToolFactory
 from neuro_san.internals.interfaces.invocation_context import InvocationContext
-from neuro_san.internals.interfaces.reservationist import Reservationist
 from neuro_san.internals.journals.journal import Journal
 from neuro_san.internals.journals.progress_journal import ProgressJournal
 from neuro_san.internals.messages.agent_message import AgentMessage

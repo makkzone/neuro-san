@@ -18,7 +18,7 @@ from asyncio import Event
 from asyncio import get_running_loop
 from asyncio import run_coroutine_threadsafe
 
-from neuro_san.internals.interfaces.reservation import Reservation
+from neuro_san.interfaces.reservation import Reservation
 from neuro_san.internals.reservations.abstract_agent_reservationist import AbstractAgentReservationist
 from neuro_san.internals.reservations.agent_reservation import AgentReservation
 
