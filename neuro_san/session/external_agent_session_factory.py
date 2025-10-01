@@ -90,17 +90,13 @@ class ExternalAgentSessionFactory(AsyncAgentSessionFactory):
             # Optimization: We want to create a different kind of session to minimize socket usage
             # and potentially relieve the direct user of the burden of having to start a server
 
-            # "agent_name" here is a "client view" name of the agent,
-            # we need to translate it to the "service view" name
-            service_agent_name: str = AgentFileTreeMapper.filepath_to_agent_network_name(agent_name)
-
             agent_network_provider: AgentNetworkProvider = \
-                self.network_storage.get_agent_network_provider(service_agent_name)
+                self.network_storage.get_agent_network_provider(agent_name)
             agent_network: AgentNetwork = agent_network_provider.get_agent_network()
             safe_invocation_context: InvocationContext = invocation_context.safe_shallow_copy()
             session = AsyncDirectAgentSession(agent_network, safe_invocation_context, metadata=metadata)
 
-            print(f"Created AsyncDirectAgentSession for external agent '{service_agent_name}' {session}")
+            print(f"Created AsyncDirectAgentSession for external agent '{agent_name}' {session}")
 
         if session is None:
             # When creating a session for external agents, specifically use None for the

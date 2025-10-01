@@ -40,14 +40,6 @@ class ExternalAgentParsing:
         if agent_url is None or len(agent_url) == 0:
             return None
 
-        # We expect an external agent url to start with "/"
-        # if it is not so, return None for invalid format.
-        if not agent_url.startswith("/"):
-            return None
-
-        # Get an agent URL proper:
-        agent_url = agent_url[1:]
-
         parse_result: ParseResult = urlparse(agent_url)
         if parse_result is None:
             return None
@@ -55,6 +47,10 @@ class ExternalAgentParsing:
         if parse_result.path is None or len(parse_result.path) <= 1:
             # We don't have enough characters in the path to even specify
             # an agent that lives on the same server.
+            return None
+
+        if not parse_result.path.startswith("/"):
+            # This is not an external agent specification
             return None
 
         host: str = None
@@ -66,22 +62,9 @@ class ExternalAgentParsing:
             if len(split) > 1:
                 port = split[1]
 
-        no_host: bool = host is None or len(host) == 0
-        no_port: bool = port is None or len(port) == 0
-        if no_host:
+        # Special case for detecting localhost
+        if host is None or len(host) == 0:
             host = "localhost"
-
-        # Try for special case:
-        # we have an external agent specification for local agent, like "/SomeAgentName"
-        if no_host and no_port and not parse_result.path.startswith("/"):
-            agent_name = parse_result.path
-            return_dict = {
-                "host": host,
-                "port": port,
-                "agent_name": agent_name,
-            }
-            print(f"Special case for local agent: {return_dict}")
-            return return_dict
 
         # Get the agent name from the URL by looking at the path
         # Remove any leading slashes from the path for the agent name.
@@ -99,7 +82,6 @@ class ExternalAgentParsing:
             "port": port,
             "agent_name": agent_name,
         }
-        print(f"Special case for remote agent: {return_dict}")
         return return_dict
 
     @staticmethod
