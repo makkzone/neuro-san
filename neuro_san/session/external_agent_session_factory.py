@@ -70,7 +70,6 @@ class ExternalAgentSessionFactory(AsyncAgentSessionFactory):
         """
         if agent_location is None:
             return None
-
         # Create the session.
         host = agent_location.get("host")
         port = agent_location.get("port")
