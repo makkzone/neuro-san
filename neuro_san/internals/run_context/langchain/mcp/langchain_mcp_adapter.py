@@ -13,8 +13,11 @@
 from typing import List
 from typing import Optional
 
+import copy
+
 from langchain_core.tools import BaseTool
 from langchain_mcp_adapters.client import MultiServerMCPClient
+from neuro_san.internals.run_context.utils.external_credentials_provider import ExternalCredentialsProvider
 
 
 class LangChainMcpAdapter:
@@ -38,16 +41,19 @@ class LangChainMcpAdapter:
         :return: A list of LangChain BaseTool instances retrieved from the MCP server.
         """
 
+        mcp_tool_dict: Dict[str, Any] = {
+            "url": server_url,
+            "transport": "streamable_http",
+        }
+        # Try to look up authentication details from the URL
+        creds_dict: Dict[str, Any] = ExternalCredentialsProvider.get_credentials({"endpoint": server_url})
+        print(f"Retrieved credentials for MCP server: {creds_dict}")
+        if creds_dict:
+            mcp_tool_dict["headers"] = copy.copy(creds_dict)
+
+        print(f"Connecting to MCP server at {server_url} with headers: {mcp_tool_dict.get('headers')}")
         client = MultiServerMCPClient(
-            {
-                "mcp_tool": {
-                    "url": server_url,
-                    "transport": "streamable_http",
-                    # As of 09/22/2025, Neuro-SAN does not support passing authentication
-                    # details (e.g., tokens) through the HOCON interface.
-                    # In the future, these details will be provided in the "headers" key here.
-                }
-            }
+            {   "server": mcp_tool_dict }
         )
 
         # The get_tools() method returns a list of StructuredTool instances, which are subclasses of BaseTool.
