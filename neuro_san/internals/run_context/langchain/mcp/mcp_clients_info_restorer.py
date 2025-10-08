@@ -26,6 +26,8 @@ from neuro_san import DEPLOY_DIR
 class McpClientsInfoRestorer(Restorer):
     """
     Implementation of the Restorer interface that reads the MCP clients info file.
+    NOTE: This class is highly experimental and implementation of MCP clients
+    is very likely to change in future releases.
     """
 
     def restore(self, file_reference: str = None) -> Dict[str, Any]:

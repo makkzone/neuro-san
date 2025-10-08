@@ -16,10 +16,11 @@ from typing import List
 from typing import Optional
 
 import copy
+import threading
 
 from langchain_core.tools import BaseTool
 from langchain_mcp_adapters.client import MultiServerMCPClient
-from neuro_san.internals.graph.persistence.mcp_clients_info_restorer import McpClientsInfoRestorer
+from neuro_san.internals.run_context.langchain.mcp.mcp_clients_info_restorer import McpClientsInfoRestorer
 
 
 class LangChainMcpAdapter:
@@ -29,7 +30,21 @@ class LangChainMcpAdapter:
     """
 
     # Cached MCP clients info to avoid repeated file reads
+    _mcp_info_lock: threading.Lock = threading.Lock()
     _mcp_clients_info: Dict[str, Any] = None
+
+    @staticmethod
+    def _load_mcp_clients_info():
+        """
+        Loads MCP clients information from a configuration file if not already loaded.
+        """
+        with LangChainMcpAdapter._mcp_info_lock:
+            if LangChainMcpAdapter._mcp_clients_info is None:
+                LangChainMcpAdapter._mcp_clients_info = McpClientsInfoRestorer().restore()
+                if LangChainMcpAdapter._mcp_clients_info is None:
+                    # Something went wrong reading the file.
+                    # Prevent further attempts to load info.
+                    LangChainMcpAdapter._mcp_clients_info = {}
 
     @staticmethod
     async def get_mcp_tools(
@@ -46,10 +61,7 @@ class LangChainMcpAdapter:
         :return: A list of LangChain BaseTool instances retrieved from the MCP server.
         """
         if LangChainMcpAdapter._mcp_clients_info is None:
-            LangChainMcpAdapter._mcp_clients_info = McpClientsInfoRestorer().restore()
-            if LangChainMcpAdapter._mcp_clients_info is None:
-                # Prevent further attempts to read the file if first attempt failed.
-                LangChainMcpAdapter._mcp_clients_info = {}
+            LangChainMcpAdapter._load_mcp_clients_info()
 
         mcp_tool_dict: Dict[str, Any] = {
             "url": server_url,
