@@ -25,7 +25,7 @@ class UrlNetworkValidator(AgentNetworkValidator):
     AgentNetworkValidator that looks for correct URLs in an agent network
     """
 
-    def __init__(self, subnetworks: List[str], mcp_servers: List[str]):
+    def __init__(self, subnetworks: List[str] = None, mcp_servers: List[str] = None):
         """
         Constructor
 
@@ -55,9 +55,9 @@ class UrlNetworkValidator(AgentNetworkValidator):
 
         # Compile list of urls to check
         urls: List[str] = []
-        if self.subnetworks is not None:
+        if self.subnetworks:
             urls.extend(self.subnetworks)
-        if self.mcp_servers is not None:
+        if self.mcp_servers:
             urls.extend(self.mcp_servers)
 
         self.logger.info("Validating URLs for MCP tools and subnetwork...")
@@ -68,7 +68,7 @@ class UrlNetworkValidator(AgentNetworkValidator):
                 if tools:
                     for tool in tools:
                         if self.is_url_or_path(tool) and tool not in urls:
-                            error_msg = f"Agent '{agent_name}' has invalid URL or path in tools: '{tool}'"
+                            error_msg = f"Agent '{agent_name}' has invalid URL or path in tools: '{tool}' urls: {urls}"
                             errors.append(error_msg)
 
         return errors
