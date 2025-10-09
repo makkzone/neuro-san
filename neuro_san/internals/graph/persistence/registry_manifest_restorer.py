@@ -153,14 +153,15 @@ your current working directory (pwd).
                     agent_network = None
 
                 if agent_network is not None:
-                    network_name: str = self.agent_mapper.filepath_to_agent_network_name(agent_filepath)
 
                     validation_errors: List[str] = validator.validate(agent_network.get_config())
                     if len(validation_errors) > 0:
-                        self.logger.error("manifest registry %s has errors. Skipping. Errors: %s",
-                                          use_key, json.dumps(validation_errors, indent=4, sort_keys=True))
+                        self.logger.error("manifest registry %s has validation errors. Skipping. Errors: %s",
+                                          agent_filepath,
+                                          json.dumps(validation_errors, indent=4, sort_keys=True))
                         continue
 
+                    network_name: str = self.agent_mapper.filepath_to_agent_network_name(agent_filepath)
                     agent_networks[network_name] = agent_network
                 else:
                     self.logger.error("manifest registry %s not found in %s", use_key, manifest_file)
