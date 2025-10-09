@@ -128,6 +128,7 @@ class StructureNetworkValidator(AgentNetworkValidator):
         # Step 4: Return all agents that were found to be part of cycles
         return cyclical_agents
 
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
     def dfs_cycle_detection(self, agent_network: Dict[str, Any], agent: str,
                             path: List[str], state: Dict[str, int], cyclical_agents: Set[str]):
         """

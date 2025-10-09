@@ -36,7 +36,7 @@ class UrlNetworkValidator(AgentNetworkValidator):
         self.subnetworks: List[str] = subnetworks
         self.mcp_servers: List[str] = mcp_servers
 
-    def validate_url(self, agent_network: Dict[str, Any]) -> List[str]:
+    def validate(self, agent_network: Dict[str, Any]) -> List[str]:
         """
         Check if URL of MCP servers and subnetworks are valid.
 
