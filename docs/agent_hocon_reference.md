@@ -50,6 +50,7 @@ Sub-keys to those dictionaries will be described in the next-level down heading 
     - [command](#command)
     - [tools (agents)](#tools-agents)
         - [External Agents](#external-agents)
+        - [MCP Servers](#mcp-servers)
     - [llm_config](#llm_config-1)
     - [class](#class-1)
     - [toolbox](#toolbox)
@@ -471,7 +472,14 @@ An optional string to set an LLM-enabled agent in motion.
 
 ### tools (agents)
 
-An optional list of strings with the names of other agents available for the agent being described to call.
+An optional list defining which tools or agents the described agent can access.
+Each entry may be one of the following:
+
+- The name of another agent within the same network definition.
+
+- A string reference to an [external agent](#external-agents)
+
+- A string or dictionary reference to an [MCP server](#mcp-servers)
 
 Typically the names listed here are other agents within the same agent network definition,
 often forming a tree structure, but overall agent networks are allowed to contain cycles.
@@ -498,6 +506,36 @@ Furthermore, it is also possible to reference agents on other neuro-san _servers
 Example: `http://localhost:8080/math_guy`
 
 This enables entire ecosystems of agent webs.
+
+#### MCP Servers
+
+Agents can also call tools exposed by external Model Context Protocol (MCP) servers.
+This can be configured in two forms:
+
+- string reference
+
+```json
+"tools": ["https://example.com/mcp"]
+```
+
+- dictionary reference
+
+Example:
+
+```json
+"tools": [
+    {
+        "url": "https://example.com/mcp",
+        "tools": ["tool_1"]
+    }
+]
+```
+
+Here, the `tools` key filters which specific tools from the MCP server are made available.
+If omitted, all tools on the server will be accessible.
+
+> Note: Authentication for MCP servers is not currently supported.
+Authorization and security mechanisms are planned for future releases.
 
 <!--- pyml disable-next-line no-duplicate-heading -->
 ### llm_config
