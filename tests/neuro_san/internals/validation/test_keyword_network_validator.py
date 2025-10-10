@@ -15,66 +15,31 @@ from typing import List
 
 from unittest import TestCase
 
-from neuro_san import REGISTRIES_DIR
-from neuro_san.internals.graph.persistence.agent_network_restorer import AgentNetworkRestorer
-from neuro_san.internals.graph.registry.agent_network import AgentNetwork
+from neuro_san.internals.interfaces.agent_network_validator import AgentNetworkValidator
 from neuro_san.internals.validation.keyword_network_validator import KeywordNetworkValidator
 
+from tests.neuro_san.internals.validation.abstract_network_validator_test import AbstractNetworkValidatorTest
 
-class TestKeywordNetworkValidator(TestCase):
+
+class TestKeywordNetworkValidator(TestCase, AbstractNetworkValidatorTest):
     """
     Unit tests for KeywordNetworkValidator class.
     """
 
-    def test_assumptions(self):
+    def create_validator(self) -> AgentNetworkValidator:
         """
-        Can we construct?
+        Creates an instance of the validator
         """
-        validator = KeywordNetworkValidator()
-        self.assertIsNotNone(validator)
-
-    def test_empty(self):
-        """
-        Tests empty network
-        """
-        validator = KeywordNetworkValidator()
-
-        errors: List[str] = validator.validate(None)
-        self.assertEqual(1, len(errors))
-
-        errors: List[str] = validator.validate({})
-        self.assertEqual(1, len(errors))
-
-    def test_valid(self):
-        """
-        Tests a valid network
-        """
-        validator = KeywordNetworkValidator()
-
-        # Open a known good network file
-        restorer = AgentNetworkRestorer()
-        hocon_file: str = REGISTRIES_DIR.get_file_in_basis("hello_world.hocon")
-        agent_network: AgentNetwork = restorer.restore(file_reference=hocon_file)
-        config: Dict[str, Any] = agent_network.get_config()
-
-        errors: List[str] = validator.validate(config)
-
-        failure_message: str = None
-        if len(errors) > 0:
-            failure_message = errors[0]
-        self.assertEqual(0, len(errors), failure_message)
+        return KeywordNetworkValidator()
 
     def test_no_instructions(self):
         """
         Tests a network where at least one of the nodes does not have instructions
         """
-        validator = KeywordNetworkValidator()
+        validator: AgentNetworkValidator = self.create_validator()
 
         # Open a known good network file
-        restorer = AgentNetworkRestorer()
-        hocon_file: str = REGISTRIES_DIR.get_file_in_basis("hello_world.hocon")
-        agent_network: AgentNetwork = restorer.restore(file_reference=hocon_file)
-        config: Dict[str, Any] = agent_network.get_config()
+        config: Dict[str, Any] = self.restore("hello_world.hocon")
 
         # Invalidate per the test
         config["tools"][0]["instructions"] = ""

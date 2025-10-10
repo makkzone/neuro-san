@@ -62,14 +62,14 @@ class AbstractNetworkValidatorTest(AssertForwarder):
         errors: List[str] = validator.validate({})
         self.assertEqual(1, len(errors))
 
-    def test_valid(self):
+    def test_valid(self, hocon_file: str = "hello_world.hocon"):
         """
         Tests a valid network
         """
         validator: AgentNetworkValidator = self.create_validator()
 
         # Open a known good network file
-        config: Dict[str, Any] = self.restore("hello_world.hocon")
+        config: Dict[str, Any] = self.restore(hocon_file)
 
         errors: List[str] = validator.validate(config)
 
