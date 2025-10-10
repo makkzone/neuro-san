@@ -34,6 +34,7 @@ class ManifestNetworkValidator(CompositeNetworkValidator):
         :param mcp_servers: A list of MCP servers, as read in from a mcp_info.hocon file
         """
         validators: List[AgentNetworkValidator] = [
+            # Note we do use the CyclesNetworkValidator here because cycles are actually OK.
             KeywordNetworkValidator(),
             MissingNodesNetworkValidator(),
             UnreachableNodesNetworkValidator(),
