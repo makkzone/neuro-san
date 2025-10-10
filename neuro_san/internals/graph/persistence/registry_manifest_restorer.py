@@ -31,6 +31,7 @@ from neuro_san.internals.interfaces.agent_name_mapper import AgentNameMapper
 from neuro_san.internals.graph.persistence.agent_filetree_mapper import AgentFileTreeMapper
 from neuro_san.internals.graph.persistence.agent_network_restorer import AgentNetworkRestorer
 from neuro_san.internals.graph.registry.agent_network import AgentNetwork
+from neuro_san.internals.validation.manifest_network_validator import ManifestNetworkValidator
 
 
 class RegistryManifestRestorer(Restorer):
@@ -72,7 +73,7 @@ class RegistryManifestRestorer(Restorer):
 
         self.logger = logging.getLogger(self.__class__.__name__)
 
-    # pylint: disable=too-many-locals
+    # pylint: disable=too-many-locals, too-many-branches
     def restore_from_files(self, file_references: Sequence[str]) -> Dict[str, AgentNetwork]:
         """
         :param file_references: The sequence of file references to use when restoring.
@@ -124,6 +125,12 @@ your current working directory (pwd).
 """
                 raise FileNotFoundError(message)
 
+            # Find the list of agent network names
+            external_network_names: List[str] = self.find_external_network_names(one_manifest)
+
+            # DEF - need mcp servers as well at some point
+            validator = ManifestNetworkValidator(external_network_names)
+
             for key, value in one_manifest.items():
                 if not bool(value):
                     # Fast out
@@ -144,7 +151,16 @@ your current working directory (pwd).
                 except FileNotFoundError as exc:
                     self.logger.error("Failed to restore registry item %s - %s", use_key, str(exc))
                     agent_network = None
+
                 if agent_network is not None:
+
+                    validation_errors: List[str] = validator.validate(agent_network.get_config())
+                    if len(validation_errors) > 0:
+                        self.logger.error("manifest registry %s has validation errors. Skipping. Errors: %s",
+                                          agent_filepath,
+                                          json.dumps(validation_errors, indent=4, sort_keys=True))
+                        continue
+
                     network_name: str = self.agent_mapper.filepath_to_agent_network_name(agent_filepath)
                     agent_networks[network_name] = agent_network
                 else:
@@ -172,3 +188,28 @@ your current working directory (pwd).
         Return current list of manifest files.
         """
         return self.manifest_files
+
+    def find_external_network_names(self, manifest_entries: Dict[str, Any]) -> List[str]:
+        """
+        Find the list of valid external agent network names
+
+        :param manifest_entries: The manifest entries
+        :return: A list of valid external network references.
+        """
+
+        external_network_names: List[str] = []
+        for key, value in manifest_entries.items():
+            if not bool(value):
+                # Fast out
+                continue
+
+            # Key here is an agent name in a form that we chose,
+            # and we'll need to use an agent mapper to get to this agent definition file.
+            # Keys sometimes come with quotes.
+            use_key: str = key.replace(r'"', "")
+            use_key = use_key.strip()
+            agent_filepath: str = self.agent_mapper.agent_name_to_filepath(use_key)
+            network_name: str = self.agent_mapper.filepath_to_agent_network_name(agent_filepath)
+            external_network_names.append(f"/{network_name}")
+
+        return external_network_names
