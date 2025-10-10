@@ -27,6 +27,7 @@ class ToolNameNetworkValidator(AgentNetworkValidator):
     AgentNetworkValidator that looks for correct tool names in an agent network
     """
 
+    # This comes from the langchain error message that happens when a tool name is not valid
     TOOL_NAME_PATTERN: str = r"^[a-zA-Z0-9_-]+$"
 
     def __init__(self):
