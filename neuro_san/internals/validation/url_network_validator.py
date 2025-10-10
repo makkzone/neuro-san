@@ -76,7 +76,8 @@ class UrlNetworkValidator(AbstractNetworkValidator):
         for tool in safe_tools:
             if self.is_url_or_path(tool) and \
                     tool not in urls and \
-                    not tool.endswith("mcp"):
+                    not tool.endswith("mcp") and \
+                    not tool.endswith("mcp/"):
                 error_msg = f"Agent '{agent_name}' has invalid URL or path in tools." + \
                             f" Invalid tool: '{tool}' urls: {urls}"
                 errors.append(error_msg)
