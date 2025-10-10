@@ -19,6 +19,7 @@ import os
 import json
 import logging
 
+from json.decoder import JSONDecodeError
 from pyparsing.exceptions import ParseException
 from pyparsing.exceptions import ParseSyntaxException
 
@@ -104,7 +105,7 @@ syntactically incorrect in that file.
                 except FileNotFoundError:
                     # Use the common verbiage below
                     one_manifest = None
-                except json.decoder.JSONDecodeError as exception:
+                except JSONDecodeError as exception:
                     message: str = f"""
 There was an error parsing the agent network manifest file "{manifest_file}".
 See the accompanying JSONDecodeError exception (above) for clues as to what might be
@@ -145,11 +146,20 @@ your current working directory (pwd).
 
                 file_of_class = FileOfClass(manifest_file)
                 manifest_dir: str = file_of_class.get_basis()
+
                 registry_restorer = AgentNetworkRestorer(registry_dir=manifest_dir, agent_mapper=self.agent_mapper)
                 try:
                     agent_network: AgentNetwork = registry_restorer.restore(file_reference=agent_filepath)
-                except FileNotFoundError as exc:
-                    self.logger.error("Failed to restore registry item %s - %s", use_key, str(exc))
+                except FileNotFoundError as exception:
+                    message: str = f"Failed to restore registry item {use_key}. Skipping. - {str(exception)}"
+                    self.logger.error(message)
+                    agent_network = None
+                except (ParseException, ParseSyntaxException, JSONDecodeError) as exception:
+                    use_exception: Exception = exception
+                    if exception.__cause__ is not None:
+                        use_exception = exception.__cause__
+                    message: str = f"Parse error in registry item {use_key}. Skipping. - {str(use_exception)}"
+                    self.logger.error(message)
                     agent_network = None
 
                 if agent_network is not None:
