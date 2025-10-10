@@ -16,33 +16,49 @@ from typing import List
 from unittest import TestCase
 
 from neuro_san.internals.interfaces.agent_network_validator import AgentNetworkValidator
-from neuro_san.internals.validation.keyword_network_validator import KeywordNetworkValidator
+from neuro_san.internals.validation.unreachable_nodes_network_validator import UnreachableNodesNetworkValidator
 
 from tests.neuro_san.internals.validation.abstract_network_validator_test import AbstractNetworkValidatorTest
 
 
-class TestKeywordNetworkValidator(TestCase, AbstractNetworkValidatorTest):
+class TestUnreachableNodesNetworkValidator(TestCase, AbstractNetworkValidatorTest):
     """
-    Unit tests for KeywordNetworkValidator class.
+    Unit tests for UnreachableNodesNetworkValidator class.
     """
 
     def create_validator(self) -> AgentNetworkValidator:
         """
         Creates an instance of the validator
         """
-        return KeywordNetworkValidator()
+        return UnreachableNodesNetworkValidator()
 
-    def test_no_instructions(self):
+    def test_multiple_front_men(self):
         """
-        Tests a network where at least one of the nodes does not have instructions
+        Tests a network where there is > 1 front man.
         """
         validator: AgentNetworkValidator = self.create_validator()
 
         # Open a known good network file
         config: Dict[str, Any] = self.restore("hello_world.hocon")
 
-        # Invalidate per the test
-        config["tools"][0]["instructions"] = ""
+        # Invalidate per the test - remove the link between the announcer and synonymizer
+        config["tools"][0]["tools"] = []
 
         errors: List[str] = validator.validate(config)
         self.assertEqual(1, len(errors))
+
+    def test_unreachable(self):
+        """
+        Tests a network where there is an unreachable agent.
+        """
+        validator: AgentNetworkValidator = self.create_validator()
+
+        # Open a known good network file
+        config: Dict[str, Any] = self.restore("esp_decision_assistant.hocon")
+
+        # Invalidate per the test - remove the link between the prescriptor and the predictor
+        config["tools"][1]["tools"] = []
+
+        errors: List[str] = validator.validate(config)
+
+        self.assertEqual(1, len(errors), errors[-1])

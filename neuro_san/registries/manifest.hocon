@@ -17,6 +17,10 @@
     # Currently we list each hocon file we want to serve as a key with a boolean value.
     # Eventually we might have a dictionary value with server specifications for each.
 
+    # These two allow us to test agent hocons in a directory hierarchy.
+    "deep/math_guy.hocon": true,
+    "deep/math_guy_passthrough.hocon": true,
+
     "esp_decision_assistant.hocon": true,
     "hello_world.hocon": true,
     "intranet_agents.hocon": true,

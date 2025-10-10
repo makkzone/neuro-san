@@ -17,10 +17,10 @@ from typing import List
 from logging import getLogger
 from logging import Logger
 
-from neuro_san.internals.interfaces.agent_network_validator import AgentNetworkValidator
+from neuro_san.internals.validation.abstract_network_validator import AbstractNetworkValidator
 
 
-class KeywordNetworkValidator(AgentNetworkValidator):
+class KeywordNetworkValidator(AbstractNetworkValidator):
     """
     AgentNetworkValidator that looks for correct keywords in an agent network
     """
@@ -31,24 +31,16 @@ class KeywordNetworkValidator(AgentNetworkValidator):
         """
         self.logger: Logger = getLogger(self.__class__.__name__)
 
-    def validate(self, agent_network: Dict[str, Any]) -> List[str]:
+    def validate_name_to_spec_dict(self, name_to_spec: Dict[str, Any]) -> List[str]:
         """
-        Validate the agent network.
+        Validate the agent network, specifically in the form of a name -> agent spec dictionary.
 
-        :param agent_network: The agent network or name -> spec dictionary to validate
+        :param name_to_spec: The name -> agent spec dictionary to validate
         :return: List of errors indicating agents and missing keywords
         """
         errors: List[str] = []
 
         self.logger.info("Validating agent network keywords...")
-
-        if not agent_network:
-            errors.append("Agent network is empty.")
-            return errors
-
-        # We can validate either from a top-level agent network,
-        # or from the list of tools from the agent spec.
-        name_to_spec: Dict[str, Any] = self.get_name_to_spec(agent_network)
 
         # Currently, only required "instructions" for non-function agents.
         for agent_name, agent in name_to_spec.items():

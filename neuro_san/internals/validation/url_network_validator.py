@@ -17,12 +17,12 @@ from typing import List
 from logging import getLogger
 from logging import Logger
 
-from neuro_san.internals.interfaces.agent_network_validator import AgentNetworkValidator
+from neuro_san.internals.validation.abstract_network_validator import AbstractNetworkValidator
 
 
-class UrlNetworkValidator(AgentNetworkValidator):
+class UrlNetworkValidator(AbstractNetworkValidator):
     """
-    AgentNetworkValidator that looks for correct URLs in an agent network
+    AbstractNetworkValidator that looks for correct URLs in an agent network
     """
 
     def __init__(self, external_agents: List[str] = None, mcp_servers: List[str] = None):
@@ -36,22 +36,15 @@ class UrlNetworkValidator(AgentNetworkValidator):
         self.external_agents: List[str] = external_agents
         self.mcp_servers: List[str] = mcp_servers
 
-    def validate(self, agent_network: Dict[str, Any]) -> List[str]:
+    def validate_name_to_spec_dict(self, name_to_spec: Dict[str, Any]) -> List[str]:
         """
+        Validate the agent network, specifically in the form of a name -> agent spec dictionary.
         Check if URL of MCP servers and external_agents are valid.
 
-        :param agent_network: The agent network or name -> spec dictionary to validate
+        :param name_to_spec: The name -> agent spec dictionary to validate
         :return: List of errors indicating invalid URL
         """
         errors: List[str] = []
-
-        if not agent_network:
-            errors.append("Agent network is empty.")
-            return errors
-
-        # We can validate either from a top-level agent network,
-        # or from the list of tools from the agent spec.
-        name_to_spec: Dict[str, Any] = self.get_name_to_spec(agent_network)
 
         # Compile list of urls to check
         urls: List[str] = []

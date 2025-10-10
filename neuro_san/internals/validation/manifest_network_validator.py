@@ -14,8 +14,9 @@ from typing import List
 from neuro_san.internals.interfaces.agent_network_validator import AgentNetworkValidator
 from neuro_san.internals.validation.composite_network_validator import CompositeNetworkValidator
 from neuro_san.internals.validation.keyword_network_validator import KeywordNetworkValidator
-from neuro_san.internals.validation.structure_network_validator import StructureNetworkValidator
+from neuro_san.internals.validation.missing_nodes_network_validator import MissingNodesNetworkValidator
 from neuro_san.internals.validation.tool_name_network_validator import ToolNameNetworkValidator
+from neuro_san.internals.validation.unreachable_nodes_network_validator import UnreachableNodesNetworkValidator
 from neuro_san.internals.validation.url_network_validator import UrlNetworkValidator
 
 
@@ -33,8 +34,10 @@ class ManifestNetworkValidator(CompositeNetworkValidator):
         :param mcp_servers: A list of MCP servers, as read in from a mcp_info.hocon file
         """
         validators: List[AgentNetworkValidator] = [
+            # Note we do use the CyclesNetworkValidator here because cycles are actually OK.
             KeywordNetworkValidator(),
-            StructureNetworkValidator(cyclical_agents_ok=True),
+            MissingNodesNetworkValidator(),
+            UnreachableNodesNetworkValidator(),
             # No ToolBoxNetworkValidator yet.
             ToolNameNetworkValidator(),
             UrlNetworkValidator(external_network_names, mcp_servers),

@@ -17,12 +17,12 @@ from typing import List
 from logging import getLogger
 from logging import Logger
 
-from neuro_san.internals.interfaces.agent_network_validator import AgentNetworkValidator
+from neuro_san.internals.validation.abstract_network_validator import AbstractNetworkValidator
 
 
-class ToolboxNetworkValidator(AgentNetworkValidator):
+class ToolboxNetworkValidator(AbstractNetworkValidator):
     """
-    Agent network validator for toolbox references.
+    AbstractNetworkValidator for toolbox references.
     """
 
     def __init__(self, tools: Dict[str, Any]):
@@ -34,24 +34,16 @@ class ToolboxNetworkValidator(AgentNetworkValidator):
         self.logger: Logger = getLogger(self.__class__.__name__)
         self.tools: Dict[str, Any] = tools
 
-    def validate(self, agent_network: Dict[str, Any]) -> List[str]:
+    def validate_name_to_spec_dict(self, name_to_spec: Dict[str, Any]) -> List[str]:
         """
-        Validate the agent network.
+        Validate the agent network, specifically in the form of a name -> agent spec dictionary.
 
-        :param agent_network: The agent network or name -> spec dictionary to validate
-        :return: List of errors indicating agents and missing keywords
+        :param name_to_spec: The name -> agent spec dictionary to validate
+        :return: A list of error messages
         """
         errors: List[str] = []
 
         self.logger.info("Validating toolbox agents...")
-
-        if not agent_network:
-            errors.append("Agent network is empty.")
-            return errors
-
-        # We can validate either from a top-level agent network,
-        # or from the list of tools from the agent spec.
-        name_to_spec: Dict[str, Any] = self.get_name_to_spec(agent_network)
 
         for agent_name, agent in name_to_spec.items():
             if agent.get("instructions") is None:  # This is a toolbox agent

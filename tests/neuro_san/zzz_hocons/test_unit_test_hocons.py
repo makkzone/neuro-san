@@ -36,6 +36,7 @@ class TestUnitTestHocons(TestCase):
         # Barring that, try to stick to alphabetical order.
         "math_guy/basic_sly_data.hocon",
         "math_guy/forwarded_sly_data.hocon",
+        "math_guy/deep_forwarded_sly_data.hocon",
         "music_nerd/beatles_with_history.hocon",
 
         # List more hocon files as they become available here.

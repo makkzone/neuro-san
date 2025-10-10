@@ -15,69 +15,47 @@ from typing import List
 
 from unittest import TestCase
 
-from neuro_san import REGISTRIES_DIR
-from neuro_san.internals.graph.persistence.agent_network_restorer import AgentNetworkRestorer
-from neuro_san.internals.graph.registry.agent_network import AgentNetwork
+from neuro_san.internals.interfaces.agent_network_validator import AgentNetworkValidator
 from neuro_san.internals.validation.tool_name_network_validator import ToolNameNetworkValidator
 
+from tests.neuro_san.internals.validation.abstract_network_validator_test import AbstractNetworkValidatorTest
 
-class TestToolNameNetworkValidator(TestCase):
+
+class TestToolNameNetworkValidator(TestCase, AbstractNetworkValidatorTest):
     """
     Unit tests for ToolNameNetworkValidator class.
     """
 
-    def test_assumptions(self):
+    def create_validator(self) -> AgentNetworkValidator:
         """
-        Can we construct?
+        Creates an instance of the validator
         """
-        validator = ToolNameNetworkValidator()
-        self.assertIsNotNone(validator)
-
-    def test_empty(self):
-        """
-        Tests empty network
-        """
-        validator = ToolNameNetworkValidator()
-
-        errors: List[str] = validator.validate(None)
-        self.assertEqual(1, len(errors))
-
-        errors: List[str] = validator.validate({})
-        self.assertEqual(1, len(errors))
-
-    def test_valid(self):
-        """
-        Tests a valid network
-        """
-        validator = ToolNameNetworkValidator()
-
-        # Open a known good network file
-        restorer = AgentNetworkRestorer()
-        hocon_file: str = REGISTRIES_DIR.get_file_in_basis("hello_world.hocon")
-        agent_network: AgentNetwork = restorer.restore(file_reference=hocon_file)
-        config: Dict[str, Any] = agent_network.get_config()
-
-        errors: List[str] = validator.validate(config)
-
-        failure_message: str = None
-        if len(errors) > 0:
-            failure_message = errors[0]
-        self.assertEqual(0, len(errors), failure_message)
+        return ToolNameNetworkValidator()
 
     def test_bad_name(self):
         """
         Tests a network where at least one of the nodes has a bad name
         """
-        validator = ToolNameNetworkValidator()
+        validator: AgentNetworkValidator = ToolNameNetworkValidator()
 
         # Open a known good network file
-        restorer = AgentNetworkRestorer()
-        hocon_file: str = REGISTRIES_DIR.get_file_in_basis("hello_world.hocon")
-        agent_network: AgentNetwork = restorer.restore(file_reference=hocon_file)
-        config: Dict[str, Any] = agent_network.get_config()
+        config: Dict[str, Any] = self.restore("hello_world.hocon")
 
         # Invalidate per the test
         config["tools"][0]["name"] = "ann0un$er"
 
         errors: List[str] = validator.validate(config)
         self.assertEqual(1, len(errors))
+
+    def test_deep_name(self):
+        """
+        Tests a network where at least one of the nodes has a reference to
+        an exeternal network in a directory hierachy.
+        """
+        validator: AgentNetworkValidator = ToolNameNetworkValidator()
+
+        # Open a known good network file
+        config: Dict[str, Any] = self.restore("deep/math_guy_passthrough.hocon")
+
+        errors: List[str] = validator.validate(config)
+        self.assertEqual(0, len(errors))

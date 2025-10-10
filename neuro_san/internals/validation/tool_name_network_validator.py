@@ -19,12 +19,12 @@ from logging import Logger
 
 import re
 
-from neuro_san.internals.interfaces.agent_network_validator import AgentNetworkValidator
+from neuro_san.internals.validation.abstract_network_validator import AbstractNetworkValidator
 
 
-class ToolNameNetworkValidator(AgentNetworkValidator):
+class ToolNameNetworkValidator(AbstractNetworkValidator):
     """
-    AgentNetworkValidator that looks for correct tool names in an agent network
+    AbstractNetworkValidator that looks for correct tool names in an agent network
     """
 
     # This comes from the langchain error message that happens when a tool name is not valid
@@ -36,24 +36,14 @@ class ToolNameNetworkValidator(AgentNetworkValidator):
         """
         self.logger: Logger = getLogger(self.__class__.__name__)
 
-    def validate(self, agent_network: Dict[str, Any]) -> List[str]:
+    def validate_name_to_spec_dict(self, name_to_spec: Dict[str, Any]) -> List[str]:
         """
-        Validate the agent network.
+        Validate the agent network, specifically in the form of a name -> agent spec dictionary.
 
-        :param agent_network: The agent network or name -> spec dictionary to validate
-        :return: List of errors indicating agents and missing keywords
+        :param name_to_spec: The name -> agent spec dictionary to validate
+        :return: List of errors indicating agents than have invalid names
         """
         errors: List[str] = []
-
-        self.logger.info("Validating agent network keywords...")
-
-        if not agent_network:
-            errors.append("Agent network is empty.")
-            return errors
-
-        # We can validate either from a top-level agent network,
-        # or from the list of tools from the agent spec.
-        name_to_spec: Dict[str, Any] = self.get_name_to_spec(agent_network)
 
         # Be sure all agent names are valid per the regex above.
         for agent_name, agent in name_to_spec.items():

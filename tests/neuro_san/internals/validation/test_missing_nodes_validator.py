@@ -16,39 +16,34 @@ from typing import List
 from unittest import TestCase
 
 from neuro_san.internals.interfaces.agent_network_validator import AgentNetworkValidator
-from neuro_san.internals.validation.url_network_validator import UrlNetworkValidator
+from neuro_san.internals.validation.missing_nodes_network_validator import MissingNodesNetworkValidator
 
 from tests.neuro_san.internals.validation.abstract_network_validator_test import AbstractNetworkValidatorTest
 
 
-class TestUrlNetworkValidator(TestCase, AbstractNetworkValidatorTest):
+class TestMissingNodesNetworkValidator(TestCase, AbstractNetworkValidatorTest):
     """
-    Unit tests for UrlNetworkValidator class.
+    Unit tests for MissingNodesNetworkValidator class.
     """
 
     def create_validator(self) -> AgentNetworkValidator:
         """
         Creates an instance of the validator
         """
-        return UrlNetworkValidator(external_agents=["/math_guy"])
+        return MissingNodesNetworkValidator()
 
-    def test_valid(self):
+    def test_missing_nodes(self):
         """
-        Tests a valid network
-        """
-        super().test_valid(hocon_file="math_guy_passthrough.hocon")
-
-    def test_no_external_network(self):
-        """
-        Tests a network where at least one of the nodes does not have a listed external network
+        Tests a network where there is an unreachable agent.
         """
         validator: AgentNetworkValidator = self.create_validator()
 
         # Open a known good network file
-        config: Dict[str, Any] = self.restore("math_guy_passthrough.hocon")
+        config: Dict[str, Any] = self.restore("esp_decision_assistant.hocon")
 
-        # Invalidate per the test
-        config["tools"][0]["tools"][0] = "/invalid_network"
+        # Invalidate per the test - add a node at the predictor
+        config["tools"][2]["tools"] = ["missing_node"]
 
         errors: List[str] = validator.validate(config)
-        self.assertEqual(1, len(errors))
+
+        self.assertEqual(1, len(errors), errors[-1])
