@@ -18,8 +18,8 @@ from typing import Set
 from logging import getLogger
 from logging import Logger
 
-from neuro_san.internals.validation.abstract_network_validator import AbstractNetworkValidator
-from neuro_san.internals.validation.graph_visitation_state import GraphVisitationState
+from neuro_san.internals.validation.network.abstract_network_validator import AbstractNetworkValidator
+from neuro_san.internals.validation.network.graph_visitation_state import GraphVisitationState
 
 
 class CyclesNetworkValidator(AbstractNetworkValidator):

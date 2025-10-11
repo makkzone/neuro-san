@@ -15,10 +15,10 @@ from typing import List
 
 from unittest import TestCase
 
-from neuro_san.internals.interfaces.agent_network_validator import AgentNetworkValidator
-from neuro_san.internals.validation.keyword_network_validator import KeywordNetworkValidator
+from neuro_san.internals.interfaces.dictionary_validator import DictionaryValidator
+from neuro_san.internals.validation.network.keyword_network_validator import KeywordNetworkValidator
 
-from tests.neuro_san.internals.validation.abstract_network_validator_test import AbstractNetworkValidatorTest
+from tests.neuro_san.internals.validation.network.abstract_network_validator_test import AbstractNetworkValidatorTest
 
 
 class TestKeywordNetworkValidator(TestCase, AbstractNetworkValidatorTest):
@@ -26,7 +26,7 @@ class TestKeywordNetworkValidator(TestCase, AbstractNetworkValidatorTest):
     Unit tests for KeywordNetworkValidator class.
     """
 
-    def create_validator(self) -> AgentNetworkValidator:
+    def create_validator(self) -> DictionaryValidator:
         """
         Creates an instance of the validator
         """
@@ -36,7 +36,7 @@ class TestKeywordNetworkValidator(TestCase, AbstractNetworkValidatorTest):
         """
         Tests a network where at least one of the nodes does not have instructions
         """
-        validator: AgentNetworkValidator = self.create_validator()
+        validator: DictionaryValidator = self.create_validator()
 
         # Open a known good network file
         config: Dict[str, Any] = self.restore("hello_world.hocon")

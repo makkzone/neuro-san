@@ -17,7 +17,7 @@ from typing import List
 from logging import getLogger
 from logging import Logger
 
-from neuro_san.internals.validation.abstract_network_validator import AbstractNetworkValidator
+from neuro_san.internals.validation.network.abstract_network_validator import AbstractNetworkValidator
 
 
 class UrlNetworkValidator(AbstractNetworkValidator):

@@ -16,19 +16,19 @@ from typing import List
 from neuro_san import REGISTRIES_DIR
 from neuro_san.internals.graph.persistence.agent_network_restorer import AgentNetworkRestorer
 from neuro_san.internals.graph.registry.agent_network import AgentNetwork
-from neuro_san.internals.interfaces.agent_network_validator import AgentNetworkValidator
+from neuro_san.internals.interfaces.dictionary_validator import DictionaryValidator
 from neuro_san.test.interfaces.assert_forwarder import AssertForwarder
 
 
 class AbstractNetworkValidatorTest(AssertForwarder):
     """
-    Abstract base class for testing AgentNetworkValidators
+    Abstract base class for testing DictionaryValidators that process agent networks.
 
     We assume that subclasses will implement the create_validator method
     and also derive from unittest.TestCase.
     """
 
-    def create_validator(self) -> AgentNetworkValidator:
+    def create_validator(self) -> DictionaryValidator:
         """
         Creates an instance of the validator
         """
@@ -47,14 +47,14 @@ class AbstractNetworkValidatorTest(AssertForwarder):
         """
         Can we construct?
         """
-        validator: AgentNetworkValidator = self.create_validator()
+        validator: DictionaryValidator = self.create_validator()
         self.assertIsNotNone(validator)
 
     def test_empty(self):
         """
         Tests empty network
         """
-        validator: AgentNetworkValidator = self.create_validator()
+        validator: DictionaryValidator = self.create_validator()
 
         errors: List[str] = validator.validate(None)
         self.assertEqual(1, len(errors))
@@ -66,7 +66,7 @@ class AbstractNetworkValidatorTest(AssertForwarder):
         """
         Tests a valid network
         """
-        validator: AgentNetworkValidator = self.create_validator()
+        validator: DictionaryValidator = self.create_validator()
 
         # Open a known good network file
         config: Dict[str, Any] = self.restore(hocon_file)
