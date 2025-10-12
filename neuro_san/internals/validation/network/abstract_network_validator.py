@@ -13,31 +13,31 @@ from typing import Any
 from typing import Dict
 from typing import List
 
-from neuro_san.internals.interfaces.agent_network_validator import AgentNetworkValidator
+from neuro_san.internals.interfaces.dictionary_validator import DictionaryValidator
 
 
-class AbstractNetworkValidator(AgentNetworkValidator):
+class AbstractNetworkValidator(DictionaryValidator):
     """
     An abstract interface for validating agent network content with a little bit of
     common policy thrown in.
     """
 
-    def validate(self, agent_network: Dict[str, Any]) -> List[str]:
+    def validate(self, candidate: Dict[str, Any]) -> List[str]:
         """
         Validate the agent network
 
-        :param agent_network: The agent network or name -> spec dictionary to validate
+        :param candidate: The agent network or name -> spec dictionary to validate
         :return: A list of error messages
         """
         errors: List[str] = []
 
-        if not agent_network:
+        if not candidate:
             errors.append("Agent network is empty.")
             return errors
 
         # We can validate either from a top-level agent network,
         # or from the list of tools from the agent spec.
-        name_to_spec: Dict[str, Any] = self.get_name_to_spec(agent_network)
+        name_to_spec: Dict[str, Any] = self.get_name_to_spec(candidate)
 
         name_to_spec_errors: List[str] = self.validate_name_to_spec_dict(name_to_spec)
         errors.extend(name_to_spec_errors)

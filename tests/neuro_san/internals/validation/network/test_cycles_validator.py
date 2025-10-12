@@ -15,10 +15,10 @@ from typing import List
 
 from unittest import TestCase
 
-from neuro_san.internals.interfaces.agent_network_validator import AgentNetworkValidator
-from neuro_san.internals.validation.cycles_network_validator import CyclesNetworkValidator
+from neuro_san.internals.interfaces.dictionary_validator import DictionaryValidator
+from neuro_san.internals.validation.network.cycles_network_validator import CyclesNetworkValidator
 
-from tests.neuro_san.internals.validation.abstract_network_validator_test import AbstractNetworkValidatorTest
+from tests.neuro_san.internals.validation.network.abstract_network_validator_test import AbstractNetworkValidatorTest
 
 
 class TestCyclesNetworkValidator(TestCase, AbstractNetworkValidatorTest):
@@ -26,7 +26,7 @@ class TestCyclesNetworkValidator(TestCase, AbstractNetworkValidatorTest):
     Unit tests for CyclesNetworkValidator class.
     """
 
-    def create_validator(self) -> AgentNetworkValidator:
+    def create_validator(self) -> DictionaryValidator:
         """
         Creates an instance of the validator
         """
@@ -37,7 +37,7 @@ class TestCyclesNetworkValidator(TestCase, AbstractNetworkValidatorTest):
         Tests a network where there is a cycle.
         These can actually be ok, but we want to test that we can detect them.
         """
-        validator: AgentNetworkValidator = self.create_validator()
+        validator: DictionaryValidator = self.create_validator()
 
         # Open a known good network file
         config: Dict[str, Any] = self.restore("esp_decision_assistant.hocon")

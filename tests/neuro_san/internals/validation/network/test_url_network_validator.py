@@ -15,10 +15,10 @@ from typing import List
 
 from unittest import TestCase
 
-from neuro_san.internals.interfaces.agent_network_validator import AgentNetworkValidator
-from neuro_san.internals.validation.url_network_validator import UrlNetworkValidator
+from neuro_san.internals.interfaces.dictionary_validator import DictionaryValidator
+from neuro_san.internals.validation.network.url_network_validator import UrlNetworkValidator
 
-from tests.neuro_san.internals.validation.abstract_network_validator_test import AbstractNetworkValidatorTest
+from tests.neuro_san.internals.validation.network.abstract_network_validator_test import AbstractNetworkValidatorTest
 
 
 class TestUrlNetworkValidator(TestCase, AbstractNetworkValidatorTest):
@@ -26,7 +26,7 @@ class TestUrlNetworkValidator(TestCase, AbstractNetworkValidatorTest):
     Unit tests for UrlNetworkValidator class.
     """
 
-    def create_validator(self) -> AgentNetworkValidator:
+    def create_validator(self) -> DictionaryValidator:
         """
         Creates an instance of the validator
         """
@@ -42,7 +42,7 @@ class TestUrlNetworkValidator(TestCase, AbstractNetworkValidatorTest):
         """
         Tests a network where at least one of the nodes does not have a listed external network
         """
-        validator: AgentNetworkValidator = self.create_validator()
+        validator: DictionaryValidator = self.create_validator()
 
         # Open a known good network file
         config: Dict[str, Any] = self.restore("math_guy_passthrough.hocon")

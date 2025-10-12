@@ -11,18 +11,18 @@
 # END COPYRIGHT
 from typing import List
 
-from neuro_san.internals.interfaces.agent_network_validator import AgentNetworkValidator
-from neuro_san.internals.validation.composite_network_validator import CompositeNetworkValidator
-from neuro_san.internals.validation.keyword_network_validator import KeywordNetworkValidator
-from neuro_san.internals.validation.missing_nodes_network_validator import MissingNodesNetworkValidator
-from neuro_san.internals.validation.tool_name_network_validator import ToolNameNetworkValidator
-from neuro_san.internals.validation.unreachable_nodes_network_validator import UnreachableNodesNetworkValidator
-from neuro_san.internals.validation.url_network_validator import UrlNetworkValidator
+from neuro_san.internals.interfaces.dictionary_validator import DictionaryValidator
+from neuro_san.internals.validation.common.composite_dictionary_validator import CompositeDictionaryValidator
+from neuro_san.internals.validation.network.keyword_network_validator import KeywordNetworkValidator
+from neuro_san.internals.validation.network.missing_nodes_network_validator import MissingNodesNetworkValidator
+from neuro_san.internals.validation.network.tool_name_network_validator import ToolNameNetworkValidator
+from neuro_san.internals.validation.network.unreachable_nodes_network_validator import UnreachableNodesNetworkValidator
+from neuro_san.internals.validation.network.url_network_validator import UrlNetworkValidator
 
 
-class ManifestNetworkValidator(CompositeNetworkValidator):
+class ManifestNetworkValidator(CompositeDictionaryValidator):
     """
-    Implementation of CompositeNetworkValidator interface that uses multiple specific validators
+    Implementation of CompositeDictionaryValidator interface that uses multiple specific validators
     to do some standard validation upon reading in an agent network description.
     """
 
@@ -33,7 +33,7 @@ class ManifestNetworkValidator(CompositeNetworkValidator):
         :param external_network_names: A list of external network names
         :param mcp_servers: A list of MCP servers, as read in from a mcp_info.hocon file
         """
-        validators: List[AgentNetworkValidator] = [
+        validators: List[DictionaryValidator] = [
             # Note we do use the CyclesNetworkValidator here because cycles are actually OK.
             KeywordNetworkValidator(),
             MissingNodesNetworkValidator(),

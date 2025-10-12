@@ -11,16 +11,16 @@
 # END COPYRIGHT
 from typing import List
 
-from neuro_san.internals.interfaces.agent_network_validator import AgentNetworkValidator
-from neuro_san.internals.validation.composite_network_validator import CompositeNetworkValidator
-from neuro_san.internals.validation.cycles_network_validator import CyclesNetworkValidator
-from neuro_san.internals.validation.missing_nodes_network_validator import MissingNodesNetworkValidator
-from neuro_san.internals.validation.unreachable_nodes_network_validator import UnreachableNodesNetworkValidator
+from neuro_san.internals.interfaces.dictionary_validator import DictionaryValidator
+from neuro_san.internals.validation.common.composite_dictionary_validator import CompositeDictionaryValidator
+from neuro_san.internals.validation.network.cycles_network_validator import CyclesNetworkValidator
+from neuro_san.internals.validation.network.missing_nodes_network_validator import MissingNodesNetworkValidator
+from neuro_san.internals.validation.network.unreachable_nodes_network_validator import UnreachableNodesNetworkValidator
 
 
-class StructureNetworkValidator(CompositeNetworkValidator):
+class StructureNetworkValidator(CompositeDictionaryValidator):
     """
-    Implementation of CompositeNetworkValidator interface that uses multiple specific validators
+    Implementation of CompositeDictionaryValidator interface that uses multiple specific validators
     to do some standard validation for topological issues.
     This gets used by agent network designer.
     """
@@ -29,7 +29,7 @@ class StructureNetworkValidator(CompositeNetworkValidator):
         """
         Constructor
         """
-        validators: List[AgentNetworkValidator] = [
+        validators: List[DictionaryValidator] = [
             CyclesNetworkValidator(),
             MissingNodesNetworkValidator(),
             UnreachableNodesNetworkValidator(),

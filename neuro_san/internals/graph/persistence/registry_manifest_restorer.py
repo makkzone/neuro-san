@@ -32,7 +32,7 @@ from neuro_san.internals.interfaces.agent_name_mapper import AgentNameMapper
 from neuro_san.internals.graph.persistence.agent_filetree_mapper import AgentFileTreeMapper
 from neuro_san.internals.graph.persistence.agent_network_restorer import AgentNetworkRestorer
 from neuro_san.internals.graph.registry.agent_network import AgentNetwork
-from neuro_san.internals.validation.manifest_network_validator import ManifestNetworkValidator
+from neuro_san.internals.validation.network.manifest_network_validator import ManifestNetworkValidator
 
 
 class RegistryManifestRestorer(Restorer):

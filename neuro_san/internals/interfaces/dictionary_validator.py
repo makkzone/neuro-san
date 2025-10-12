@@ -14,16 +14,16 @@ from typing import Dict
 from typing import List
 
 
-class AgentNetworkValidator:
+class DictionaryValidator:
     """
-    An interface for validating agent network content.
+    An interface for validating dictionaries of various meanings.
     """
 
-    def validate(self, agent_network: Dict[str, Any]) -> List[str]:
+    def validate(self, candidate: Dict[str, Any]) -> List[str]:
         """
-        Validate the agent network
+        Validate the given dictionary
 
-        :param agent_network: The agent network or name -> spec dictionary to validate
+        :param candidate: The dictionary to validate
         :return: A list of error messages
         """
         raise NotImplementedError

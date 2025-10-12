@@ -13,36 +13,40 @@ from typing import Any
 from typing import Dict
 from typing import List
 
-from neuro_san.internals.interfaces.agent_network_validator import AgentNetworkValidator
+from neuro_san.internals.interfaces.dictionary_validator import DictionaryValidator
 
 
-class CompositeNetworkValidator(AgentNetworkValidator):
+class CompositeDictionaryValidator(DictionaryValidator):
     """
-    Implementation of the AgentNetworkValidator interface that uses multiple validators
+    Implementation of the DictionaryValidator interface that uses multiple validators
     """
 
-    def __init__(self, validators: List[AgentNetworkValidator]):
+    def __init__(self, validators: List[DictionaryValidator]):
         """
         Constructor
 
         :param validators: A list of validators to use
         """
-        self.validators = validators
+        self.validators: List[DictionaryValidator] = validators
 
-    def validate(self, agent_network: Dict[str, Any]) -> List[str]:
+    def validate(self, candidate: Dict[str, Any]) -> List[str]:
         """
         Validate the agent network.
 
-        :param agent_network: The agent network or name -> spec dictionary to validate
+        :param candidate: The dictionary to validate
         :return: A list of error messages
         """
         errors: List[str] = []
 
-        if not agent_network:
-            errors.append("Agent network is empty.")
+        if not candidate:
+            errors.append("Nothing to validate.")
+            return errors
+
+        if self.validators is None or len(self.validators) == 0:
+            errors.append("No validation policy.")
             return errors
 
         for validator in self.validators:
-            errors.extend(validator.validate(agent_network))
+            errors.extend(validator.validate(candidate))
 
         return errors

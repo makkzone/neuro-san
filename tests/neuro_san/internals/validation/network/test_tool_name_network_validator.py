@@ -15,10 +15,10 @@ from typing import List
 
 from unittest import TestCase
 
-from neuro_san.internals.interfaces.agent_network_validator import AgentNetworkValidator
-from neuro_san.internals.validation.tool_name_network_validator import ToolNameNetworkValidator
+from neuro_san.internals.interfaces.dictionary_validator import DictionaryValidator
+from neuro_san.internals.validation.network.tool_name_network_validator import ToolNameNetworkValidator
 
-from tests.neuro_san.internals.validation.abstract_network_validator_test import AbstractNetworkValidatorTest
+from tests.neuro_san.internals.validation.network.abstract_network_validator_test import AbstractNetworkValidatorTest
 
 
 class TestToolNameNetworkValidator(TestCase, AbstractNetworkValidatorTest):
@@ -26,7 +26,7 @@ class TestToolNameNetworkValidator(TestCase, AbstractNetworkValidatorTest):
     Unit tests for ToolNameNetworkValidator class.
     """
 
-    def create_validator(self) -> AgentNetworkValidator:
+    def create_validator(self) -> DictionaryValidator:
         """
         Creates an instance of the validator
         """
@@ -36,7 +36,7 @@ class TestToolNameNetworkValidator(TestCase, AbstractNetworkValidatorTest):
         """
         Tests a network where at least one of the nodes has a bad name
         """
-        validator: AgentNetworkValidator = ToolNameNetworkValidator()
+        validator: DictionaryValidator = ToolNameNetworkValidator()
 
         # Open a known good network file
         config: Dict[str, Any] = self.restore("hello_world.hocon")
@@ -52,7 +52,7 @@ class TestToolNameNetworkValidator(TestCase, AbstractNetworkValidatorTest):
         Tests a network where at least one of the nodes has a reference to
         an exeternal network in a directory hierachy.
         """
-        validator: AgentNetworkValidator = ToolNameNetworkValidator()
+        validator: DictionaryValidator = ToolNameNetworkValidator()
 
         # Open a known good network file
         config: Dict[str, Any] = self.restore("deep/math_guy_passthrough.hocon")
