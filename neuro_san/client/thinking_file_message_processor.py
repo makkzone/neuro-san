@@ -131,6 +131,8 @@ class ThinkingFileMessageProcessor(MessageProcessor):
         if self.thinking_dir:
             if origin_filename is None or len(origin_filename) == 0:
                 return
+            # In case origin_filename is a structured agent name, convert it with "__"
+            origin_filename = origin_filename.replace("/", "__")
             filename = Path(self.thinking_dir, origin_filename)
 
         how_to_open_file: str = "a"

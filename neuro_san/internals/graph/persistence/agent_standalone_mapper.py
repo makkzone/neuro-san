@@ -9,7 +9,7 @@
 # neuro-san SDK Software in commercial settings.
 #
 # END COPYRIGHT
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from neuro_san.internals.interfaces.agent_name_mapper import AgentNameMapper
 
@@ -25,7 +25,7 @@ class AgentStandaloneMapper(AgentNameMapper):
         """
         Agent name is its filepath.
         """
-        return agent_name
+        return str(Path(PurePosixPath(agent_name)))
 
     def filepath_to_agent_network_name(self, filepath: str) -> str:
         """

@@ -135,6 +135,7 @@ class ExternalAgentParsing:
             # FWIW: langchain internal tool references must satisfy the regex: "^[a-zA-Z0-9_-]+$"
             # It's possible that more complex external references might have the agent_name
             # needing further mangling.  Cross that bridge when we have a real example.
+            # As a part of valid URL, agent_name can only have "/" in it.
             safe_name = "__" + agent_location.get("agent_name").replace("/", "__")
 
         return safe_name
