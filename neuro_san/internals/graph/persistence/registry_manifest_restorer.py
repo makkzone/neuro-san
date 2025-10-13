@@ -89,6 +89,7 @@ class RegistryManifestRestorer(Restorer):
 
         return all_agent_networks
 
+    # pylint: disable=too-many-locals
     def restore_one_manifest(self, manifest_file: str) -> Dict[str, AgentNetwork]:
         """
         :param manifest_file: The file reference to use when restoring.
