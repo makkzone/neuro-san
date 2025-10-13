@@ -47,8 +47,9 @@ class DirectAgentSessionFactory:
         """
         Constructor
         """
-        public_storage: AgentNetworkStorage = DirectAgentStorageUtil.create_network_storage()
-        protected_storage: AgentNetworkStorage = DirectAgentStorageUtil.create_network_storage()
+        # DEF - This will read the manifest twice. We can do better.
+        public_storage: AgentNetworkStorage = DirectAgentStorageUtil.create_network_storage("public")
+        protected_storage: AgentNetworkStorage = DirectAgentStorageUtil.create_network_storage("protected")
         self.network_storage_dict: Dict[str, AgentNetworkStorage] = {
             "protected": protected_storage,
             "public": public_storage,

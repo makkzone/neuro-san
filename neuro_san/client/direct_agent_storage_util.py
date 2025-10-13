@@ -22,15 +22,17 @@ class DirectAgentStorageUtil:
     """
 
     @staticmethod
-    def create_network_storage() -> AgentNetworkStorage:
+    def create_network_storage(storage_type: str = "public") -> AgentNetworkStorage:
         """
         :return: An AgentNetworkStorage populated from the Registry Manifest
         """
         network_storage = AgentNetworkStorage()
         manifest_restorer = RegistryManifestRestorer()
-        manifest_networks: Dict[str, AgentNetwork] = manifest_restorer.restore()
+        manifest_networks: Dict[str, Dict[str, AgentNetwork]] = manifest_restorer.restore()
 
-        for agent_name, agent_network in manifest_networks.items():
+        storage_networks: Dict[str, AgentNetwork] = manifest_networks.get(storage_type)
+
+        for agent_name, agent_network in storage_networks.items():
             network_storage.add_agent_network(agent_name, agent_network)
 
         return network_storage

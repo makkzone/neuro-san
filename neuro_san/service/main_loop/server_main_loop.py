@@ -57,7 +57,7 @@ class ServerMainLoop(ServerLoopCallbacks):
         self.grpc_port: int = 0
         self.http_port: int = 0
 
-        self.agent_networks: Dict[str, AgentNetwork] = {}
+        self.agent_networks: Dict[str, Dict[str, AgentNetwork]] = {}
 
         self.server_name: str = DEFAULT_SERVER_NAME
         self.server_name_for_logs: str = DEFAULT_SERVER_NAME_FOR_LOGS
@@ -190,7 +190,7 @@ class ServerMainLoop(ServerLoopCallbacks):
         self.http_server_config.http_port = args.http_port
 
         manifest_restorer = RegistryManifestRestorer()
-        manifest_agent_networks: Dict[str, AgentNetwork] = manifest_restorer.restore()
+        manifest_agent_networks: Dict[str, Dict[str, AgentNetwork]] = manifest_restorer.restore()
         manifest_files: List[str] = manifest_restorer.get_manifest_files()
 
         self.watcher_config = {
@@ -261,8 +261,9 @@ class ServerMainLoop(ServerLoopCallbacks):
         # Now - our servers (gRPC and http) are created and listen to updates of network_storage
         # Perform the initial setup
         network_storage_dict: Dict[str, AgentNetworkStorage] = self.server_context.get_network_storage_dict()
-        public_storage: AgentNetworkStorage = network_storage_dict.get("public")
-        public_storage.setup_agent_networks(self.agent_networks)
+        for storage_type in ["public", "protected"]:
+            storage: AgentNetworkStorage = network_storage_dict.get(storage_type)
+            storage.setup_agent_networks(self.agent_networks.get(storage_type))
 
         # Start all services:
         http_server_thread = None
