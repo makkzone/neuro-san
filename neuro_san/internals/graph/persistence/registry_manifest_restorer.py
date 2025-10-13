@@ -25,11 +25,13 @@ from pyparsing.exceptions import ParseSyntaxException
 
 from leaf_common.config.file_of_class import FileOfClass
 from leaf_common.persistence.interface.restorer import Restorer
+from leaf_common.config.dictionary_overlay import DictionaryOverlay
 
 from neuro_san import REGISTRIES_DIR
 from neuro_san.internals.interfaces.agent_name_mapper import AgentNameMapper
 from neuro_san.internals.graph.persistence.agent_filetree_mapper import AgentFileTreeMapper
 from neuro_san.internals.graph.persistence.agent_network_restorer import AgentNetworkRestorer
+from neuro_san.internals.graph.persistence.manifest_filter_chain import ManifestFilterChain
 from neuro_san.internals.graph.persistence.raw_manifest_restorer import RawManifestRestorer
 from neuro_san.internals.graph.registry.agent_network import AgentNetwork
 from neuro_san.internals.validation.network.manifest_network_validator import ManifestNetworkValidator
@@ -74,32 +76,40 @@ class RegistryManifestRestorer(Restorer):
 
         self.logger = logging.getLogger(self.__class__.__name__)
 
-    def restore_from_files(self, file_references: Sequence[str]) -> Dict[str, AgentNetwork]:
+    def restore_from_files(self, file_references: Sequence[str]) -> Dict[str, Dict[str, AgentNetwork]]:
         """
         :param file_references: The sequence of file references to use when restoring.
-        :return: a built map of agent networks
+        :return: a nested map of storage type -> (mapping of name -> agent networks)
         """
 
-        all_agent_networks: Dict[str, AgentNetwork] = {}
+        all_agent_networks: Dict[str, Dict[str, AgentNetwork]] = {}
+        overlayer = DictionaryOverlay()
 
         # Loop through all the manifest files in the list to make a composite
         for manifest_file in file_references:
-            agents_from_one_manifest: Dict[str, AgentNetwork] = self.restore_one_manifest(manifest_file)
-            all_agent_networks.update(agents_from_one_manifest)
+            agents_from_one_manifest: Dict[str, Dict[str, AgentNetwork]] = self.restore_one_manifest(manifest_file)
+            all_agent_networks = overlayer.overlay(all_agent_networks, agents_from_one_manifest)
 
         return all_agent_networks
 
     # pylint: disable=too-many-locals
-    def restore_one_manifest(self, manifest_file: str) -> Dict[str, AgentNetwork]:
+    def restore_one_manifest(self, manifest_file: str) -> Dict[str, Dict[str, AgentNetwork]]:
         """
         :param manifest_file: The file reference to use when restoring.
-        :return: a built map of agent networks
+        :return: a nested map of storage type -> (mapping of name -> agent networks)
         """
 
-        agent_networks: Dict[str, AgentNetwork] = {}
+        agent_networks: Dict[str, Dict[str, AgentNetwork]] = {
+            "public": {},
+            "protected": {},
+        }
 
         raw_restorer = RawManifestRestorer()
-        one_manifest: Dict[str, Any] = raw_restorer.restore(file_reference=manifest_file)
+        raw_manifest: Dict[str, Any] = raw_restorer.restore(file_reference=manifest_file)
+
+        # By the end of the filter chain, only served entries will be included.
+        manifest_filter = ManifestFilterChain(manifest_file)
+        one_manifest: Dict[str, Dict[str, Any]] = manifest_filter.filter_config(raw_manifest)
 
         file_of_class = FileOfClass(manifest_file)
         manifest_dir: str = file_of_class.get_basis()
@@ -109,20 +119,10 @@ class RegistryManifestRestorer(Restorer):
         # DEF - need mcp servers as well at some point
         validator = ManifestNetworkValidator(external_network_names)
 
-        for key, value in one_manifest.items():
+        # At this point only hocon files we are going to serve up are in the one_manifest.
+        for manifest_key, manifest_dict in one_manifest.items():
 
-            # Read the true/false value as to whether or not we serve up this agent
-            # This might get more complicated in the future.
-            if not bool(value):
-                # Fast out
-                continue
-
-            # Key here is an agent name in a form that we chose,
-            # and we'll need to use an agent mapper to get to this agent definition file.
-            # Keys sometimes come with quotes.
-            manifest_key: str = key.replace(r'"', "")
-            manifest_key = manifest_key.strip()
-
+            # We'll need to use an agent mapper to get to this agent definition file.
             agent_filepath: str = self.agent_mapper.agent_name_to_filepath(manifest_key)
             agent_network: AgentNetwork = self.restore_one_agent_network(manifest_dir, agent_filepath, manifest_key)
 
@@ -141,7 +141,13 @@ class RegistryManifestRestorer(Restorer):
                 continue
 
             network_name: str = self.agent_mapper.filepath_to_agent_network_name(agent_filepath)
-            agent_networks[network_name] = agent_network
+
+            # Figure out where we want to put the network per the network's manifest dictionary
+            storage: str = "public"
+            if not manifest_dict.get("public"):
+                storage = "protected"
+
+            agent_networks[storage][network_name] = agent_network
 
         return agent_networks
 
@@ -204,16 +210,9 @@ class RegistryManifestRestorer(Restorer):
         """
 
         external_network_names: List[str] = []
-        for key, value in manifest_entries.items():
-            if not bool(value):
-                # Fast out
-                continue
+        for manifest_key in manifest_entries.keys():
 
-            # Key here is an agent name in a form that we chose,
-            # and we'll need to use an agent mapper to get to this agent definition file.
-            # Keys sometimes come with quotes.
-            manifest_key: str = key.replace(r'"', "")
-            manifest_key = manifest_key.strip()
+            # We'll need to use an agent mapper to get to this agent definition file.
             agent_filepath: str = self.agent_mapper.agent_name_to_filepath(manifest_key)
             network_name: str = self.agent_mapper.filepath_to_agent_network_name(agent_filepath)
             external_network_names.append(f"/{network_name}")

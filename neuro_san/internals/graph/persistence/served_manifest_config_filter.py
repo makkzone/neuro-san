@@ -18,10 +18,11 @@ from logging import Logger
 from leaf_common.config.config_filter import ConfigFilter
 
 
-class ManifestConfigFilter(ConfigFilter):
+class ServedManifestConfigFilter(ConfigFilter):
     """
     Implementation of the ConfigFilter interface that reads the contents
-    of a single manifest file for agent networks/registries.
+    of a single manifest file for agent networks/registries, removing any entries
+    that are not supposed to be served.
     """
 
     def __init__(self, manifest_file: str):
@@ -33,16 +34,9 @@ class ManifestConfigFilter(ConfigFilter):
         self.logger: Logger = getLogger(self.__class__.__name__)
         self.manifest_file: str = manifest_file
 
-    def filter_config(self, basis_config: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+    def filter_config(self, basis_config: Dict[str, Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
         """
         Filters the given basis config.
-
-        Manifest entries can either be a boolean or a dictionary.
-        This translates any boolean entries into all dictionary form:
-            {
-                "serve": <bool>,
-                "public": <bool>,
-            }
 
         :param basis_config: The config dictionary to act as the basis
                 for filtering
@@ -54,26 +48,12 @@ class ManifestConfigFilter(ConfigFilter):
 
         for key, value in basis_config:
 
-            expanded_value: Dict[str, Any] = {
-                "serve": True,
-                "public": True,
-            }
-
-            # Traditional, easy entry in a manifest file.
-            if isinstance(value, bool):
-                if not value:
-                    expanded_value = {
-                        "serve": False,
-                        "public": False,
-                    }
-            elif isinstance(value, Dict):
-                expanded_value = value
-            else:
-                self.logger.warning("Manifest entry for %s in file %s " +
-                                    "must be either a boolean or a dictionary. Skipping.",
+            if not value.get("serve", False):
+                self.logger.warning("Manifest entry for %s in file %s will not be served, " +
+                                    "per the 'serve' key in its config (default is False). Skipping.",
                                     key, self.manifest_file)
                 continue
 
-            filtered[key] = expanded_value
+            filtered[key] = value
 
         return filtered
