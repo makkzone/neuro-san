@@ -26,15 +26,38 @@ are file references ending with the .hocon extension. Each of these *keys* point
 
 ### Values for File Name Keys
 
-The value for any filename key is currently a boolean value.
+The value for any filename key is either a boolean value or a dictionary.
+
+#### Boolean value
 
 When the value is true, the agent described by the file key is served by the neuro-san server infrastructure
 and listed in the Concierge Service which lists all the available agents on the server.
 
 When the value is false, the agent described by the file key is neither served nor listed by the Concierge Service.
 
-At some point in the future we are likely to expand this boolean specification to a dictionary enabling
-finer-grained admin control over how individual agents are exposed.  Watch this space for updates.
+#### Dictionary value
+
+The dictionary value in the manifest file allows for finer-grained control
+over the serving and visibility of the agents with the following keys:
+
+##### serve
+
+The value for the "serve" key is a boolean.
+This says whether or not the agent should be served up at all.
+
+##### public
+
+The value for the "public" key is a boolean.
+This says whether or not the agent should be listed in the Concierge service for discovery.
+
+A true value implies that the network should be listed in the Concierge service as
+part of a generic discovery process for clients.
+
+Agents that have a false value for the "public" key are still callable by the outside world
+and as external agents for other networks, but are not listed in the Concierge service at all. 
+This is useful for when your agent network is called as an external agent by another network,
+but is considered an implementation detail for that network and is not intended for generic
+discovery.
 
 ## Server monitoring of agent description files
 
