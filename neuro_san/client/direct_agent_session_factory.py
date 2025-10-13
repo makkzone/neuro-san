@@ -23,6 +23,7 @@ from neuro_san.internals.interfaces.context_type_llm_factory import ContextTypeL
 from neuro_san.internals.run_context.factory.master_toolbox_factory import MasterToolboxFactory
 from neuro_san.internals.run_context.factory.master_llm_factory import MasterLlmFactory
 from neuro_san.internals.graph.persistence.agent_network_restorer import AgentNetworkRestorer
+from neuro_san.internals.graph.persistence.registry_manifest_restorer import RegistryManifestRestorer
 from neuro_san.internals.interfaces.agent_network_provider import AgentNetworkProvider
 from neuro_san.internals.network_providers.agent_network_storage import AgentNetworkStorage
 from neuro_san.internals.network_providers.expiring_agent_network_storage import ExpiringAgentNetworkStorage
@@ -47,14 +48,18 @@ class DirectAgentSessionFactory:
         """
         Constructor
         """
-        # DEF - This will read the manifest twice. We can do better.
-        public_storage: AgentNetworkStorage = DirectAgentStorageUtil.create_network_storage("public")
-        protected_storage: AgentNetworkStorage = DirectAgentStorageUtil.create_network_storage("protected")
+        # Read the manifest once and pass that into the Util call below.
+        manifest_restorer = RegistryManifestRestorer()
+        manifest_networks: Dict[str, Dict[str, AgentNetwork]] = manifest_restorer.restore()
+
         self.network_storage_dict: Dict[str, AgentNetworkStorage] = {
-            "protected": protected_storage,
-            "public": public_storage,
             "temp": ExpiringAgentNetworkStorage()
         }
+
+        for storage_type in ["public", "protected"]:
+            storage: AgentNetworkStorage = DirectAgentStorageUtil.create_network_storage(manifest_networks,
+                                                                                         storage_type=storage_type)
+            self.network_storage_dict[storage_type] = storage
 
     def create_session(self, agent_name: str, use_direct: bool = False,
                        metadata: Dict[str, str] = None, umbrella_timeout: Timeout = None) -> AgentSession:
