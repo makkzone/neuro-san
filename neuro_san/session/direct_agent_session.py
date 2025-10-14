@@ -15,7 +15,8 @@ from typing import Dict
 from typing import Generator
 from typing import List
 
-from asyncio import Future
+import asyncio
+import contextlib
 from copy import copy
 
 from leaf_common.asyncio.async_to_sync_generator import AsyncToSyncGenerator
@@ -169,9 +170,9 @@ class DirectAgentSession(AgentSession):
         # This might take a few minutes, which can be longer than some
         # sockets stay open.
         asyncio_executor: AsyncioExecutor = self.invocation_context.get_asyncio_executor()
-        future: Future = asyncio_executor.submit(self.request_id, chat_session.streaming_chat,
-                                                 user_input, self.invocation_context, sly_data,
-                                                 chat_context)
+        future: asyncio.Future = asyncio_executor.submit(self.request_id, chat_session.streaming_chat,
+                                                         user_input, self.invocation_context, sly_data,
+                                                         chat_context)
         # Ignore the future. Live in the now.
         _ = future
 
@@ -187,17 +188,30 @@ class DirectAgentSession(AgentSession):
                                          keep_alive_result=empty,
                                          keep_alive_timeout_seconds=10.0,
                                          umbrella_timeout=self.umbrella_timeout)
-        for message in generator.synchronously_iterate(self.invocation_context.get_queue()):
-
-            response_dict: Dict[str, Any] = copy(template_response_dict)
-            if message_filter.allow(message):
-                # We expect the message to be a dictionary form of chat.ChatMessage
-                if message_processor is not None:
-                    message_type: ChatMessageType = message.get("type")
-                    # Can modify message
-                    message_processor.process_message(message, message_type)
-                response_dict["response"] = message
-                yield response_dict
+        try:
+            # Logic of what is done here:
+            # 1. We tell underlying chat_session to delete its resources since we are done with this request;
+            # 2. We do this in "finally" block so this releasing of resources happens in any case,
+            #    including getting our sync generator
+            #    (which is implicitly constructed by these code lines and returned by this method)
+            #    interrupted by caller-side "close" method.
+            # 3. And we suppress all exceptions while deleting resources to keep things quieter.
+            for message in generator.synchronously_iterate(self.invocation_context.get_queue()):
+                response_dict: Dict[str, Any] = copy(template_response_dict)
+                if message_filter.allow(message):
+                    # We expect the message to be a dictionary form of chat.ChatMessage
+                    if message_processor is not None:
+                        message_type: ChatMessageType = message.get("type")
+                        # Can modify message
+                        message_processor.process_message(message, message_type)
+                    response_dict["response"] = message
+                    yield response_dict
+        finally:
+            with contextlib.suppress(Exception):
+                # We are in a sync run-time environment,
+                # so we need to run the async delete_resources() method
+                # with the asyncio.run() helper.
+                asyncio.run(chat_session.delete_resources())
 
     def reset(self):
         """

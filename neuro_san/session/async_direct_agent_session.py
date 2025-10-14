@@ -16,6 +16,7 @@ from typing import Generator
 from typing import List
 
 from asyncio import Future
+import contextlib
 from copy import copy
 
 from leaf_common.asyncio.asyncio_executor import AsyncioExecutor
@@ -173,18 +174,28 @@ class AsyncDirectAgentSession(AsyncAgentSession):
         # The generator below will asynchronously block waiting for
         # chat.ChatMessage dictionaries to come back asynchronously from the submit()
         # above until there are no more from the input.
-        generator = self.invocation_context.get_queue()
-        async for message in generator:
-
-            response_dict: Dict[str, Any] = copy(template_response_dict)
-            if message_filter.allow(message):
-                # We expect the message to be a dictionary form of chat.ChatMessage
-                if message_processor is not None:
-                    message_type: ChatMessageType = message.get("type")
-                    # Can modify message
-                    await message_processor.async_process_message(message, message_type)
-                response_dict["response"] = message
-                yield response_dict
+        queue_generator = self.invocation_context.get_queue()
+        try:
+            # Logic of what is done here:
+            # 1. We tell underlying chat_session to delete its resources since we are done with this request;
+            # 2. We do this in "finally" block so this releasing of resources happens in any case,
+            #    including getting our async generator
+            #    (which is implicitly constructed by these code lines and returned by this method)
+            #    interrupted by caller-side "aclose" method.
+            # 3. And we suppress all exceptions while deleting resources to keep things quieter.
+            async for message in queue_generator:
+                response_dict: Dict[str, Any] = copy(template_response_dict)
+                if message_filter.allow(message):
+                    # We expect the message to be a dictionary form of chat.ChatMessage
+                    if message_processor is not None:
+                        message_type: ChatMessageType = message.get("type")
+                        # Can modify message
+                        await message_processor.async_process_message(message, message_type)
+                    response_dict["response"] = message
+                    yield response_dict
+        finally:
+            with contextlib.suppress(Exception):
+                await chat_session.delete_resources()
 
     def reset(self):
         """
