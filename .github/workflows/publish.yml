@@ -14,6 +14,8 @@ jobs:
     if: github.repository == 'cognizant-ai-lab/neuro-san'
     runs-on: ubuntu-latest
     environment: pypi  # Match this to your configured GitHub Environment.
+    permissions:
+      id-token: write #Mandatory for PyPi Trusted Publishing (configured at pypi.org)
 
     steps:
       - name: Checkout code
@@ -34,8 +36,6 @@ jobs:
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          password: ${{ secrets.PYPI_API_TOKEN }}
 
       - name: Notify Slack on success
         if: success()
