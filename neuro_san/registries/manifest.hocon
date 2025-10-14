@@ -22,6 +22,7 @@
     # the agent should be served up as a public listing via the Concierge service.
     "hello_world.hocon": true,
 
+    "esp_decision_assistant.hocon": true,
     "intranet_agents.hocon": true,
     "math_guy.hocon": true,
     "math_guy_passthrough.hocon": true,
@@ -48,8 +49,6 @@
                             # agent networks as an implementation detail and you don't really
                             # want it to be an externally advertised entrypoint.
     },
-
-    "esp_decision_assistant.hocon": true,
 
     # This one is an example of agents calling tools that has no parameters.
     "date_time.hocon": true,
