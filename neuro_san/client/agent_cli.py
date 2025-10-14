@@ -268,19 +268,14 @@ Some suggestions:
         group = arg_parser.add_argument_group(title="Session Type",
                                               description="How will we connect to neuro-san?")
         group.add_argument("--connection", default="direct", type=str,
-                           choices=["grpc", "direct", "http", "https"],
+                           choices=["direct", "http", "https"],
                            help="""
 The type of connection to initiate. Choices are to connect to:
-    "grpc"      - an agent service via gRPC. Needs host and port.
     "http"      - an agent service via HTTP. Needs host and port.
     "https"     - an agent service via secure HTTP. Needs host and port.
     "direct"    - a session via library. (The default).
 All choices require an agent name.
 """)
-        group.add_argument("--grpc", dest="connection", action="store_const", const="grpc",
-                           help="Use a gRPC service connection")
-        group.add_argument("--service", dest="connection", action="store_const", const="grpc",
-                           help="Use a gRPC service connection")
         group.add_argument("--direct", dest="connection", action="store_const", const="direct",
                            help="Use a direct/library call for the chat")
         group.add_argument("--http", dest="connection", action="store_const", const="http",
@@ -302,7 +297,7 @@ All choices require an agent name.
         group.add_argument("--host", type=str, default=None,
                            help="hostname setting if not running locally")
         group.add_argument("--port", type=int, default=AgentSession.DEFAULT_PORT,
-                           help="TCP/IP port to run the Agent gRPC service on")
+                           help="TCP/IP port to run the Agent http service on")
         group.add_argument("--user_id", default=os.environ.get("USER"), type=str,
                            help="'user_id' metadata to send to a server for logging. Defaults to ${USER}.")
         self.arg_groups[group.title] = group
