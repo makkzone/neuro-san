@@ -188,7 +188,7 @@ class RegistryManifestRestorer(Restorer):
         :param file_reference: The file reference to use when restoring.
                 Default is None, implying the file reference is up to the
                 implementation.
-        :return: a built map of agent networks
+        :return: a nested map of storage type -> (mapping of name -> agent networks)
         """
         if file_reference is not None:
             return self.restore_from_files([file_reference])
