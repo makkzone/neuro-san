@@ -11,13 +11,16 @@
 # END COPYRIGHT
 from typing import Any
 from typing import Dict
+from typing import List
 from typing import Union
 
 from asyncio import Event
+from json import dumps
 
 from neuro_san.interfaces.reservation import Reservation
 from neuro_san.interfaces.reservationist import Reservationist
 from neuro_san.internals.reservations.agent_reservation import AgentReservation
+from neuro_san.internals.validation.network.manifest_network_validator import ManifestNetworkValidator
 
 
 class AccumulatingAgentReservationist(Reservationist):
@@ -75,10 +78,9 @@ class AccumulatingAgentReservationist(Reservationist):
         """
         actual_lifetime: float = min(lifetime_in_seconds, self.max_lifetime_in_seconds)
         if prefix is not None and len(prefix) > 0:
-            self.verify_id(prefix)
+            self.validate_id(prefix)
         reservation = AgentReservation(actual_lifetime, prefix)
 
-        # Consider verifying the content about here.
         return reservation
 
     async def __aenter__(self):
@@ -106,10 +108,25 @@ class AccumulatingAgentReservationist(Reservationist):
         if not deployment_dict:
             return None
 
-        # Do some verification here
-        for reservation in deployment_dict.keys():
+        # Do some validation here
+        validator = ManifestNetworkValidator()      # No args to this yet.
+        errors: Dict[str, List[str]] = {}
+        for reservation, agent_network_spec in deployment_dict.items():
+
+            # Validate the reservation id
             key: str = reservation.get_reservation_id()
-            self.verify_id(key)
+            self.validate_id(key)
+
+            # Validate what is being reserved.
+            # Currently, we are assuming everything is an agent network
+            new_errors: List[str] = validator.validate(agent_network_spec)
+            if new_errors is not None and len(new_errors) > 0:
+                # There were errors. Report all at once
+                errors[key] = new_errors
+
+        if errors:
+            raise ValueError(f"Found {len(errors.keys())} validation errors when attempting to deploy():\n" +
+                             f"{dumps(errors, indent=4, sort_keys=True)}")
 
         event: Event = None
         key: Union[str, Event] = None
@@ -144,7 +161,7 @@ class AccumulatingAgentReservationist(Reservationist):
         self.deployments = {}
 
     @staticmethod
-    def verify_id(test_id: str):
+    def validate_id(test_id: str):
         """
         :param test_id:  The id string to test
 

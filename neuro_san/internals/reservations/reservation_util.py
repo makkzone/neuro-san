@@ -63,8 +63,13 @@ Reservationist is None.  Try this for your server:
         # If you don't really need to wait until the new agent(s) has been deployed
         # then set confirmation=False, and don't bother about waiting for the Event.
         deployed_event: Event = None
-        async with reservationist:
-            deployed_event = await reservationist.deploy(deployments, confirmation=True)
+        try:
+            async with reservationist:
+                deployed_event = await reservationist.deploy(deployments, confirmation=True)
+
+        except ValueError as exception:
+            # Report exceptions from below as errors here.
+            error = f"{exception}"
 
         if deployed_event is not None:
             await deployed_event.wait()
