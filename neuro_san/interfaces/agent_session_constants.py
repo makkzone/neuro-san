@@ -17,12 +17,11 @@ class AgentSessionConstants:
     """
 
     # Default gRPC port for the Agent Service
-    # This port number will also be mentioned in its Dockerfile
     DEFAULT_GRPC_PORT: int = 30011
-
-    # For backwards compatibility
-    DEFAULT_PORT: int = DEFAULT_GRPC_PORT
 
     # Default port for the Agent HTTP Service
     # This port number will also be mentioned in its Dockerfile
     DEFAULT_HTTP_PORT: int = 8080
+
+    DEFAULT_PORT: int = DEFAULT_HTTP_PORT
+

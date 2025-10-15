@@ -41,7 +41,7 @@ class ConciergeSessionFactory:
                          the header. Default is None. Preferred format is a
                          dictionary of string keys to string values.
         :param connect_timeout_in_seconds: A timeout in seconds after which attempts
-                        to reach a server will stop. By default this is None,
+                        to reach a server will stop. By default, this is None,
                         meaning sessions will try forever.
         """
         session: ConciergeSession = None
@@ -58,15 +58,12 @@ class ConciergeSessionFactory:
             # This only looks at public networks, which is what we want.
             network_storage: AgentNetworkStorage = DirectAgentStorageUtil.create_network_storage()
             session = DirectConciergeSession(network_storage, metadata=metadata)
-        elif session_type in ("service", "grpc"):
-            session = GrpcConciergeSession(host=hostname, port=port,
-                                           metadata=metadata, umbrella_timeout=umbrella_timeout)
         elif session_type in ("http", "https"):
 
-            # If there is no port really specified, use the other default port
+            # If there is no port really specified, use the default port
             use_port = port
-            if port is None or port == ConciergeSession.DEFAULT_PORT:
-                use_port = ConciergeSession.DEFAULT_HTTP_PORT
+            if port is None:
+                use_port = ConciergeSession.DEFAULT_PORT
 
             security_cfg: Dict[str, Any] = None
             if session_type == "https":

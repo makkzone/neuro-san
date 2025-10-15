@@ -21,13 +21,17 @@ class ConciergeSession:
     Interface for a Concierge session.
     """
 
-    # Default port for the Concierge Service
-    # This port number will also be mentioned in its Dockerfile
-    DEFAULT_PORT: int = AgentSession.DEFAULT_PORT
+    # Default port for the Concierge gRPC Service
+    DEFAULT_GRPC_PORT: int = AgentSession.DEFAULT_GRPC_PORT
 
     # Default port for the Concierge HTTP Service
     # This port number will also be mentioned in its Dockerfile
     DEFAULT_HTTP_PORT: int = AgentSession.DEFAULT_HTTP_PORT
+
+    # Default port for the Concierge Service
+    # This port number will also be mentioned in its Dockerfile
+    DEFAULT_PORT: int = DEFAULT_HTTP_PORT
+
 
     def list(self, request_dict: Dict[str, Any]) -> Dict[str, Any]:
         """

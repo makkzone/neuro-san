@@ -64,7 +64,7 @@ class AsyncGrpcServiceAgentSession(AsyncAbstractServiceSession, AsyncAgentSessio
         if host is not None:
             use_host = host
 
-        use_port: str = str(self.DEFAULT_PORT)
+        use_port: str = str(self.DEFAULT_GRPC_PORT)
         if port is not None:
             use_port = port
 

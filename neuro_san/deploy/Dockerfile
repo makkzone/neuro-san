@@ -155,14 +155,8 @@ ENV AGENT_SERVER_NAME_FOR_LOGS="Agent Server"
 # Note that any metadata key needs to be all lowercase.
 ENV AGENT_FORWARDED_REQUEST_METADATA="request_id user_id"
 
-# Port number for the grpc service endpoint
-# If you are changing this, you should also change the first EXPOSE port above
-# and when running your container locally be sure to have a -p <port>:<port> entry
-# for it on your docker run command line.
-ENV AGENT_PORT=30011
-
 # Port number for http service endpoint
-# If you are changing this, you should also change the second EXPOSE port above
+# If you are changing this, you should also change the EXPOSE port above
 # and when running your container locally be sure to have a -p <port>:<port> entry
 # for it on your docker run command line.
 ENV AGENT_HTTP_PORT=8080
