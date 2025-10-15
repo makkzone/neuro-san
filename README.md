@@ -3,7 +3,7 @@
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/cognizant-ai-lab/neuro-san)
 
 **Neuro AI system of agent networks (Neuro SAN)** is a library for building data-driven multi-agent networks
-which can be run as a library, or served up via an HTTP/gRPC server.
+which can be run as a library, or served up via an HTTP server.
 
 Motivation: People come with all their hopes and dreams to lay them at the altar
 of a single LLM/agent expecting it to do the most complex tasks.  This often fails
@@ -189,7 +189,7 @@ at your own manifest file, set a new environment variable:
 
 ## Infrastructure
 
-The agent infrastructure is run as a library, an HTTP service and/or a gRPC service.
+The agent infrastructure is run as a library, or as an HTTP service.
 Access to agents is implemented (client and server) using the
 [AgentSession](https://github.com/cognizant-ai-lab/neuro-san/blob/main/neuro_san/interfaces/agent_session.py)
 interface:
@@ -215,7 +215,6 @@ It has 2 main methods:
 Implementations of the AgentSession interface:
 
 * DirectAgentSession class.  Use this if you want to call neuro-san as a library
-* GrpcServiceAgentSession class. Use this if you want to call neuro-san as a client to a gRPC service
 * HttpServiceAgentSession class. Use this if you want to call neuro-san as a client to a HTTP service
 
 Note that agent_cli uses all of these.  You can look at the source code there for examples.
@@ -244,7 +243,7 @@ Note that while a synchronous version of this method is available for tire-kicki
 this asynchronous interface is the preferred entry point because neuro-san itself is designed
 to operate in an asynchronous server environment to enhance agent parallelism.
 
-The args are an an argument dictionary passed in by the calling LLM, whose keys
+The args are an argument dictionary passed in by the calling LLM, whose keys
 are defined in the agent's hocon entry for the CodedTool.
 
 The intent with sly_data is that the data in this dictionary is to never supposed to enter the chat stream.

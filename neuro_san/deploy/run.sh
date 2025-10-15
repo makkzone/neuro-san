@@ -50,9 +50,7 @@ function run() {
     SERVICE_NAME="NeuroSanAgents"
     # Assume the first port EXPOSEd in the Dockerfile is the input port
     DOCKERFILE=$(find . -name Dockerfile | sort | head -1)
-    SERVICE_PORT=$(grep ^EXPOSE < "${DOCKERFILE}" | head -1 | awk '{ print $2 }')
-    SERVICE_HTTP_PORT=$(grep ^EXPOSE < "${DOCKERFILE}" | tail -1 | awk '{ print $2 }')
-    echo "SERVICE_PORT: ${SERVICE_PORT}"
+    SERVICE_HTTP_PORT=$(grep ^EXPOSE < "${DOCKERFILE}" | head -1 | awk '{ print $2 }')
     echo "SERVICE_HTTP_PORT: ${SERVICE_HTTP_PORT}"
 
     # Run the docker container in interactive mode
@@ -64,7 +62,6 @@ function run() {
         --network=$network \
         -e OPENAI_API_KEY \
         -e ANTHROPIC_API_KEY \
-        -p $SERVICE_PORT:$SERVICE_PORT \
         -p $SERVICE_HTTP_PORT:$SERVICE_HTTP_PORT \
             neuro-san/neuro-san:$CONTAINER_VERSION"
 

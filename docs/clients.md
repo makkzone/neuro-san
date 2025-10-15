@@ -6,12 +6,11 @@ If you are using Python to create your client, then you are in luck!
 The command line client at neuro_san/client/agent_cli.py is a decent example
 of how to construct a chat client in Python.
 
-A little deeper under the hood, that agent_cli client uses these classes under neuro_san/session
+A little deeper under the hood, that agent_cli client uses this class under neuro_san/session
 to connect to a server:
 
 Synchronous connection:
 
-* GrpcServiceAgentSession
 * HttpServiceAgentSession
 
 It also uses the DirectAgentSession to call the neuro-san infrastructure as a library.
@@ -19,12 +18,9 @@ There are async version of all of the above as well.
 
 ## Other clients
 
-A neuro-san server uses HTTP and/or gRPC under the hood. You can check out the protobufs definition of the
+A neuro-san server uses HTTP under the hood. You can check out the protobufs definition of the
 API under neuro_san/api/grpc.  The place to start is agent.proto for the service definitions.
 The next most important file there is chat.proto for the chat message definitions.
-
-While gRPC data transimission is more compact, most clients will likely want to use the HTTP
-interface for ease of use in terms of web-apps and dev-ops administration.
 
 ### Using curl to interact with a neuro-san server
 

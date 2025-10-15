@@ -86,10 +86,9 @@ class Assessor:
 The assessor agent to use. A default of None implies use of neuro-san stock assess_failure.hocon
 """)
         arg_parser.add_argument("--connection", default="direct", type=str,
-                                choices=["grpc", "direct", "http", "https"],
+                                choices=["direct", "http", "https"],
                                 help="""
 The type of connection to initiate. Choices are to connect to:
-    "grpc"      - an agent service via gRPC. Needs host and port.
     "http"      - an agent service via HTTP. Needs host and port.
     "https"     - an agent service via secure HTTP. Needs host and port.
     "direct"    - a session via library.
@@ -97,7 +96,7 @@ The type of connection to initiate. Choices are to connect to:
         arg_parser.add_argument("--host", type=str, default=None,
                                 help="hostname setting if not running locally")
         arg_parser.add_argument("--port", type=int, default=AgentSession.DEFAULT_PORT,
-                                help="TCP/IP port to run the Agent gRPC service on")
+                                help="TCP/IP port to run the Agent service on")
 
     def categorize_one_failure(self, fail: Dict[str, Any], failure_modes: List[str]) -> str:
         """

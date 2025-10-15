@@ -74,15 +74,6 @@ RUN \
     && chown -R ${USERNAME}: /var/log \
     && mkdir -p ${APP_SOURCE}
 
-# This is the port the service will accept grpc requests on.
-# This should be consistent with the main port for the service as described
-# in any kubernetes <service>.yaml file
-# This port number is also mentioned as AGENT_PORT below
-# and ServiceAgentSession.DEFAULT_PORT
-# In order to be self-discovered by supporting build/run scripts this must
-# be the first port exposed in the Dockerfile.
-EXPOSE 30011
-
 # This is the port the service will accept http requests on.
 # This should be consistent with the main port for the service as described
 # in any kubernetes <service>.yaml file
