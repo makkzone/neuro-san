@@ -24,4 +24,3 @@ class AgentSessionConstants:
     DEFAULT_HTTP_PORT: int = 8080
 
     DEFAULT_PORT: int = DEFAULT_HTTP_PORT
-

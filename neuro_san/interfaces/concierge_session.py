@@ -32,7 +32,6 @@ class ConciergeSession:
     # This port number will also be mentioned in its Dockerfile
     DEFAULT_PORT: int = DEFAULT_HTTP_PORT
 
-
     def list(self, request_dict: Dict[str, Any]) -> Dict[str, Any]:
         """
         :param request_dict: A dictionary version of the ConciergeRequest

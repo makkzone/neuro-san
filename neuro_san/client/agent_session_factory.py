@@ -16,7 +16,6 @@ from leaf_common.time.timeout import Timeout
 
 from neuro_san.client.direct_agent_session_factory import DirectAgentSessionFactory
 from neuro_san.interfaces.agent_session import AgentSession
-from neuro_san.session.grpc_service_agent_session import GrpcServiceAgentSession
 from neuro_san.session.http_service_agent_session import HttpServiceAgentSession
 
 
