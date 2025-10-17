@@ -44,6 +44,8 @@ from neuro_san.service.utils.server_status import ServerStatus
 from neuro_san.service.utils.server_context import ServerContext
 from neuro_san.service.http.config.http_server_config import HttpServerConfig
 from neuro_san.service.utils.service_resources import ServiceResources
+from neuro_san.service.mcp.context.mcp_server_context import MCPServerContext
+from neuro_san.service.mcp.handlers.mcp_root_handler import MCPRootHandler
 
 
 DEFAULT_SERVER_NAME: str = 'neuro-san.Agent'
@@ -68,6 +70,7 @@ class HttpServer(AgentAuthorizer, AgentStateListener):
     def __init__(self,
                  server_context: ServerContext,
                  server_config: HttpServerConfig,
+                 mcp_server_context: MCPServerContext,
                  openapi_service_spec_path: str,
                  requests_limit: int,
                  forwarded_request_metadata: str = AgentServer.DEFAULT_FORWARDED_REQUEST_METADATA):
@@ -86,6 +89,7 @@ class HttpServer(AgentAuthorizer, AgentStateListener):
         self.server_config = server_config
         self.http_port = self.server_config.http_port
         self.server_context: ServerContext = server_context
+        self.mcp_server_context: MCPServerContext = mcp_server_context
 
         # Randomize requests limit for this server instance.
         # Lower and upper bounds for number of requests before shutting down
@@ -109,7 +113,7 @@ class HttpServer(AgentAuthorizer, AgentStateListener):
         for network_storage in network_storage_dict.values():
             network_storage.add_listener(self)
 
-    def __call__(self):
+    def start(self):
         """
         Method to be called by a thread running tornado HTTP server
         to actually start serving requests.
@@ -204,6 +208,10 @@ class HttpServer(AgentAuthorizer, AgentStateListener):
         handlers.append((r"/api/v1/(.+)/connectivity", ConnectivityHandler, request_initialize_data))
         handlers.append((r"/api/v1/(.+)/streaming_chat", StreamingChatHandler, request_initialize_data))
 
+        # Register MCP "root" handler:
+        mcp_request_initialize_data: Dict[str, Any] = self.build_mcp_request_data()
+        handlers.append((r"/mcp", MCPRootHandler, mcp_request_initialize_data))
+
         return HttpServerApp(handlers, requests_limit, logger, self.forwarded_request_metadata)
 
     def allow(self, agent_name) -> AsyncAgentServiceProvider:
@@ -260,5 +268,17 @@ class HttpServer(AgentAuthorizer, AgentStateListener):
             "agent_policy": self,
             "forwarded_request_metadata": self.forwarded_request_metadata,
             "openapi_service_spec_path": self.openapi_service_spec_path,
+            "network_storage_dict": self.server_context.get_network_storage_dict()
+        }
+
+    def build_mcp_request_data(self) -> Dict[str, Any]:
+        """
+        Build request data for MCP request handler.
+        :return: a dictionary with request data to be passed to an MCP handler.
+        """
+        return {
+            "agent_policy": self,
+            "forwarded_request_metadata": self.forwarded_request_metadata,
+            "mcp_context": self.mcp_server_context,
             "network_storage_dict": self.server_context.get_network_storage_dict()
         }

@@ -21,16 +21,17 @@ from typing import Dict
 
 import jsonschema
 
-from neuro_san.service.http.base_handlers.base_request_handler import BaseRequestHandler
+from neuro_san.service.http.handlers.base_request_handler import BaseRequestHandler
 from neuro_san.internals.network_providers.agent_network_storage import AgentNetworkStorage
 from neuro_san.service.http.interfaces.agent_authorizer import AgentAuthorizer
 from neuro_san.service.http.logging.http_logger import HttpLogger
+from neuro_san.service.mcp.context.mcp_server_context import MCPServerContext
 from neuro_san.service.mcp.util.mcp_errors_util import MCPErrorsUtil
 from neuro_san.service.mcp.mcp_errors import MCPError
-from neuro_san.service.mcp.mcp_tools_processor import MCPToolsProcessor
-from neuro_san.service.mcp.mcp_resources_processor import MCPResourcesProcessor
-from neuro_san.service.mcp.mcp_prompts_processor import MCPPromptsProcessor
-from neuro_san.service.mcp.mcp_initialize_processor import MCPInitializeProcessor
+from neuro_san.service.mcp.processors.mcp_tools_processor import MCPToolsProcessor
+from neuro_san.service.mcp.processors.mcp_resources_processor import MCPResourcesProcessor
+from neuro_san.service.mcp.processors.mcp_prompts_processor import MCPPromptsProcessor
+from neuro_san.service.mcp.processors.mcp_initialize_processor import MCPInitializeProcessor
 
 
 class MCPRootHandler(BaseRequestHandler):
@@ -40,14 +41,14 @@ class MCPRootHandler(BaseRequestHandler):
     def initialize(self,
                    agent_policy: AgentAuthorizer,
                    forwarded_request_metadata: List[str],
-                   mcp_protocol_schema: Dict[str, Any],
+                   mcp_context: MCPServerContext,
                    network_storage_dict: Dict[str, AgentNetworkStorage]):
         """
         This method is called by Tornado framework to allow
         injecting service-specific data into local handler context.
         :param agent_policy: abstract policy for agent requests
         :param forwarded_request_metadata: request metadata to forward.
-        :param mcp_protocol_schema: json MCP protocol schema.
+        :param mcp_context: MCP server context to use
         :param network_storage_dict: A dictionary of string (describing scope) to
                     AgentNetworkStorage instance which keeps all the AgentNetwork instances
                     of a particular grouping.
@@ -55,7 +56,7 @@ class MCPRootHandler(BaseRequestHandler):
 
         self.agent_policy = agent_policy
         self.forwarded_request_metadata: List[str] = forwarded_request_metadata
-        self.mcp_protocol_schema: str = mcp_protocol_schema
+        self.mcp_context: MCPServerContext = mcp_context
         self.logger = HttpLogger(forwarded_request_metadata)
         self.network_storage_dict: Dict[str, AgentNetworkStorage] = network_storage_dict
         self.show_absent: bool = os.environ.get("SHOW_ABSENT_METADATA") is not None
@@ -90,11 +91,17 @@ class MCPRootHandler(BaseRequestHandler):
             data = json.loads(self.request.body)
 
             request_id = data.get("id", "absent")
+
             # Validate incoming RPC structure against MCP schema:
             jsonschema.validate(instance=data, schema=self.mcp_protocol_schema)
 
             method: str = data.get("method")
-            if method == "tools/list":
+            if method == "initialize":
+                handshake_processor: MCPInitializeProcessor = MCPInitializeProcessor(self.logger)
+                result_dict: Dict[str, Any] = await handshake_processor.initialize_handshake(request_id, metadata, data["params"])
+                self.set_status(200)
+                self.write(result_dict)
+            elif method == "tools/list":
                 tools_processor: MCPToolsProcessor = MCPToolsProcessor(self.logger, self.network_storage_dict, self.agent_policy)
                 result_dict: Dict[str, Any] = await tools_processor.list_tools(request_id, metadata)
                 self.set_status(200)

@@ -36,6 +36,7 @@ from neuro_san.service.http.config.http_server_config import DEFAULT_HTTP_SERVER
 from neuro_san.service.http.config.http_server_config import HttpServerConfig
 from neuro_san.service.interfaces.agent_server import AgentServer
 from neuro_san.service.http.server.http_server import HttpServer
+from neuro_san.service.mcp.context.mcp_server_context import MCPServerContext
 from neuro_san.service.watcher.main_loop.storage_watcher import StorageWatcher
 from neuro_san.service.utils.server_status import ServerStatus
 from neuro_san.service.utils.server_context import ServerContext
@@ -236,10 +237,15 @@ class ServerMainLoop:
             print("HTTP server is not requested - exiting.")
             return
 
+        # Create MCP server context for handling MCP protocol requests:
+        mcp_schema_path: str = TOP_LEVEL_DIR.get_file_in_basis("servive/mcp/validation/mcp-schema.json")
+        mcp_server_context: MCPServerContext = MCPServerContext(mcp_schema_path)
+
         # Create HTTP server;
         self.http_server = HttpServer(
             self.server_context,
             self.http_server_config,
+            mcp_server_context,
             self.service_openapi_spec_file,
             self.request_limit,
             forwarded_request_metadata=metadata_str)
@@ -252,7 +258,7 @@ class ServerMainLoop:
             storage.setup_agent_networks(self.agent_networks.get(storage_type))
 
         # Start http server:
-        self.http_server()
+        self.http_server.start()
 
 
 if __name__ == '__main__':

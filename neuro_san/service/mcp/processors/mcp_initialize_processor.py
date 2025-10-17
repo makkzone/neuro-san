@@ -19,9 +19,8 @@ from neuro_san.service.http.logging.http_logger import HttpLogger
 
 class MCPInitializeProcessor:
     """
-    Class implementing client-side notifications.
+    Class implementing client session initialization.
     """
-
     def __init__(self, logger: HttpLogger):
         self.logger: HttpLogger = logger
 

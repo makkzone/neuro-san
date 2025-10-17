@@ -15,7 +15,7 @@ class comment for details
 """
 
 from neuro_san.internals.interfaces.dictionary_validator import DictionaryValidator
-
+from neuro_san.service.mcp.session.mcp_session_manager import MCPSessionManager
 
 class MCPServerContext:
     """
@@ -25,7 +25,7 @@ class MCPServerContext:
 
     def __init__(self, protocol_schema_filepath: str):
         self.protocol_schema_filepath = protocol_schema_filepath
-        pass
+        self.session_manager = MCPSessionManager()
 
     def get_request_validator(self) -> DictionaryValidator:
         """
