@@ -26,8 +26,7 @@ jobs:
       - name: Install dependencies
         run: |
           apt-get update && apt-get install -y shellcheck
-          pip install -r requirements-build.txt
-          pip install -r requirements.txt
+          pip install -r requirements.txt -r requirements-build.txt
 
       - name: Show installed packages
         run: pip freeze
@@ -56,7 +55,6 @@ jobs:
 
       - name: Check README renders correctly on PyPI
         run: |
-          pip install readme_renderer readme_renderer[md]
           python -m readme_renderer README.md
 
       - name: Notify Slack on success

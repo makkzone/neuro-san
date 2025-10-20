@@ -27,12 +27,12 @@ from logging import getLogger
 
 from pydantic_core import ValidationError
 
-from langchain.agents import Agent
-from langchain.agents import AgentExecutor
-from langchain.agents.tool_calling_agent.base import create_tool_calling_agent
-from langchain.base_language import BaseLanguageModel
-from langchain.callbacks.tracers.logging import LoggingCallbackHandler
+from langchain_classic.agents import Agent
+from langchain_classic.agents import AgentExecutor
+from langchain_classic.agents.tool_calling_agent.base import create_tool_calling_agent
+from langchain_classic.callbacks.tracers.logging import LoggingCallbackHandler
 from langchain_core.callbacks.base import BaseCallbackHandler
+from langchain_core.language_models.base import BaseLanguageModel
 from langchain_core.messages.ai import AIMessage
 from langchain_core.messages.base import BaseMessage
 from langchain_core.messages.human import HumanMessage

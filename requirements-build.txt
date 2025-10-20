@@ -2,11 +2,12 @@
 # necessary for operation to minimize the size of containers
 
 # For LLM Access
-langchain-anthropic>=0.3.11,<0.4
-langchain-aws>=0.2.27,<0.3
-langchain-google-genai>=2.1.8,<3.0
-langchain-nvidia-ai-endpoints>=0.3.8,<0.4
-langchain-ollama>=0.3.4,<0.4
+langchain-anthropic>=0.3.11,<1.1
+langchain-aws>=0.2.27,<1.1
+langchain-google-genai>=2.1.8,<3.1
+# Note: As of 10/20/2025 langchain-nvidia is not ready for langchain==1.0.x
+#langchain-nvidia-ai-endpoints>=0.3.8,<0.4
+langchain-ollama>=0.3.4,<1.1
 
 # Tests
 pytest==8.3.3
@@ -32,3 +33,9 @@ build
 setuptools>=61.0
 wheel
 setuptools-scm==8.1.0
+
+# Tools that check that README renders correctly on PyPi
+readme_renderer
+readme_renderer[md]
+# Note: Workaround for install problem with cmarkgfm==2025.11.20
+cmarkgfm<=2024.11.20

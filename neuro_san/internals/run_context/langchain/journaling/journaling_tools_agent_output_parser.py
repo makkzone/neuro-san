@@ -22,7 +22,7 @@ from typing import Union
 
 from pydantic import ConfigDict
 
-from langchain.agents.output_parsers.tools import ToolsAgentOutputParser
+from langchain_classic.agents.output_parsers.tools import ToolsAgentOutputParser
 from langchain_core.outputs import Generation
 
 from neuro_san.internals.journals.journal import Journal

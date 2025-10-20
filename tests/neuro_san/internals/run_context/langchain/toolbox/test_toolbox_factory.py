@@ -12,9 +12,10 @@
 
 from unittest.mock import patch, MagicMock
 
-from langchain.tools import BaseTool
-from langchain_community.agent_toolkits.base import BaseToolkit
 import pytest
+
+from langchain_community.agent_toolkits.base import BaseToolkit
+from langchain_core.tools.base import BaseTool
 
 from neuro_san.internals.run_context.langchain.toolbox.toolbox_factory import ToolboxFactory
 

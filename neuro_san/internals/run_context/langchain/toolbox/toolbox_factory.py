@@ -21,7 +21,7 @@ from typing import Union
 
 import os
 
-from langchain.tools import BaseTool
+from langchain_core.tools.base import BaseTool
 from langchain_community.agent_toolkits.base import BaseToolkit
 from pydantic import BaseModel
 

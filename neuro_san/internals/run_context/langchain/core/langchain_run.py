@@ -12,7 +12,7 @@
 from typing import Any
 from typing import List
 
-from langchain.schema import BaseMessage
+from langchain_core.messages.base import BaseMessage
 
 from neuro_san.internals.run_context.interfaces.run import Run
 from neuro_san.internals.run_context.interfaces.tool_call import ToolCall
