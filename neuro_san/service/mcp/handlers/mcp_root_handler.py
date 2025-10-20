@@ -63,15 +63,14 @@ class MCPRootHandler(BaseRequestHandler):
         self.network_storage_dict: Dict[str, AgentNetworkStorage] = network_storage_dict
         self.show_absent: bool = os.environ.get("SHOW_ABSENT_METADATA") is not None
 
-        if os.environ.get("AGENT_ALLOW_CORS_HEADERS") is not None:
-            self.set_header("Access-Control-Allow-Origin", "*")
-            self.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-            headers: str = "Content-Type, Transfer-Encoding"
-            metadata_headers: str = ", ".join(forwarded_request_metadata)
-            if len(metadata_headers) > 0:
-                headers += f", {metadata_headers}"
-            # Set all allowed headers:
-            self.set_header("Access-Control-Allow-Headers", headers)
+        self.set_header("Access-Control-Allow-Origin", "*")
+        self.set_header("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
+        headers: str = "Content-Type, Transfer-Encoding"
+        metadata_headers: str = ", ".join(forwarded_request_metadata)
+        if len(metadata_headers) > 0:
+            headers += f", {metadata_headers}"
+        # Set all allowed headers:
+        self.set_header("Access-Control-Allow-Headers", headers)
 
 
     async def post(self):
@@ -205,5 +204,46 @@ class MCPRootHandler(BaseRequestHandler):
         finally:
             # We are done with response stream:
             self.do_finish()
+
+    async def delete(self):
+        """
+        Implementation of top-level DELETE request handler for MCP call.
+        """
+
+        metadata: Dict[str, Any] = self.get_metadata()
+        request_id = "unknown"
+
+        print(f"D>>> {self.request}")
+        print(f"D>>> {self.request.body}")
+
+        # We only expect MCP client session id taken from request headers:
+        session_id: str = self.request.headers.get(MCP_SESSION_ID, None)
+        if session_id is not None:
+            print(f"D>>> session: {session_id}")
+
+        request_status: int = 204
+        if session_id is not None:
+            session_manager: MCPSessionManager = self.mcp_context.get_session_manager()
+            deleted: bool = session_manager.delete_session(session_id)
+            if deleted:
+                self.logger.info(metadata,f"Session %s deleted by client", session_id)
+            else:
+                extra_error: str = "Session id not found"
+                error_msg: Dict[str, Any] =\
+                    MCPErrorsUtil.get_protocol_error(request_id, MCPError.InvalidSession, extra_error)
+                self.set_status(404)
+                self.write(error_msg)
+                self.logger.error(metadata, f"Error: {extra_error}")
+        else:
+            # No session id is provided in this request:
+            # report bad request
+            request_status = 401
+        self.set_status(request_status)
+        self.do_finish()
+
+    async def get(self):
+        # Consider GET request for MCP endpoint to be a service health check
+        self.set_status(200)
+        self.do_finish()
 
 

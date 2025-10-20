@@ -61,6 +61,19 @@ class MCPSessionManager:
                 return True
             return False
 
+    def delete_session(self, session_id: str) -> bool:
+        """
+        Delete an existing client session with the given session id.
+        :param session_id: The session id to delete
+        :return: True if successful;
+                 False if session with given id does not exist
+        """
+        with self.lock:
+            if session_id in self.sessions:
+                del self.sessions[session_id]
+                return True
+            return False
+
     def is_session_active(self, session_id: str) -> bool:
         """
         Check if the session with the given id is active.
