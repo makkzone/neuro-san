@@ -90,9 +90,7 @@ class MCPRootHandler(BaseRequestHandler):
 
             # Validate incoming request content:
             request_validator: DictionaryValidator = self.mcp_context.get_request_validator()
-            validation_errors: List[str] = None
-            if request_validator:
-                validation_errors = request_validator.validate_dictionary(data)
+            validation_errors = request_validator.validate(data)
             if validation_errors:
                 extra_error: str = "; ".join(validation_errors)
                 error_msg: Dict[str, Any] =\

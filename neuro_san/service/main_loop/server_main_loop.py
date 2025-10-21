@@ -238,7 +238,7 @@ class ServerMainLoop:
             return
 
         # Create MCP server context for handling MCP protocol requests:
-        mcp_schema_path: str = TOP_LEVEL_DIR.get_file_in_basis("servive/mcp/validation/mcp-schema.json")
+        mcp_schema_path: str = TOP_LEVEL_DIR.get_file_in_basis("service/mcp/validation/mcp-schema-2025-06-18.json")
         mcp_server_context: MCPServerContext = MCPServerContext(mcp_schema_path)
 
         # Create HTTP server;

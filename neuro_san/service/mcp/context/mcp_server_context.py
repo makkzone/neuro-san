@@ -13,9 +13,13 @@
 See cccccbulijhliuvfhlirlbhncljehjjhttvunhdnhfeg
 class comment for details
 """
+import json
 
 from neuro_san.internals.interfaces.dictionary_validator import DictionaryValidator
+from neuro_san.service.mcp.validation.mcp_request_validator import MCPRequestValidator
 from neuro_san.service.mcp.session.mcp_session_manager import MCPSessionManager
+
+MCP_VERSION: str = "2025-06-18"
 
 class MCPServerContext:
     """
@@ -26,6 +30,14 @@ class MCPServerContext:
     def __init__(self, protocol_schema_filepath: str):
         self.protocol_schema_filepath = protocol_schema_filepath
         self.session_manager = MCPSessionManager()
+        self.request_validator = None
+        try:
+            with open(self.protocol_schema_filepath, "r", encoding="utf-8") as schema_file:
+                self.protocol_schema = json.load(schema_file)
+                self.request_validator = MCPRequestValidator(self.protocol_schema)
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            raise RuntimeError(f"Cannot load MCP protocol schema from "
+                               f"'{self.protocol_schema_filepath}': {str(exc)}") from exc
 
     def get_request_validator(self) -> DictionaryValidator:
         """
@@ -33,7 +45,7 @@ class MCPServerContext:
 
         :return: The request validator
         """
-        return None
+        return self.request_validator
 
     def get_session_manager(self) -> MCPSessionManager:
         """
