@@ -138,20 +138,29 @@ class JournalingCallbackHandler(AsyncCallbackHandler):
             passed to the tool.
         """
 
-        if "langchain_tool" in tags:
+        # Extract tool name from the serialized data
+        agent_name: str = serialized.get("name")
 
-            # Extract tool name from the serialized data
-            agent_name: str = serialized.get("name")
+        # Remove any policy objects from the arguments passed in.
+        tool_start_dict: Dict[str, Any] = ToolArgumentReporting.prepare_tool_start_dict(inputs)
+
+        # Report that we are about to invoke a tool.
+        content: str = f"Invoking: `{agent_name}` with `{tool_start_dict.get('tool_args')}`"
+        message: BaseMessage = AgentMessage(content=content)
+        await self.calling_agent_journal.write_message(message)
+
+        if "langchain_tool" in tags:
 
             # Build the origin path
             self.origin: List[Dict[str, Any]] = self.origination.add_spec_name_to_origin(self.parent_origin, agent_name)
 
-            # Build the tool start dictionary we will report
-            combined_args_dict: Dict[str, Any] = ToolArgumentReporting.prepare_tool_start_dict(inputs, self.origin)
+            # Re-build the tool start dictionary we will report with tool origin information
+            # for the langchain tool's journal.
+            tool_start_dict = ToolArgumentReporting.prepare_tool_start_dict(inputs, self.origin)
 
             # Create a journal entry for this invocation and log the combined inputs
             self.langchain_tool_journal = OriginatingJournal(self.base_journal, self.origin)
-            message: BaseMessage = AgentMessage(content="Received arguments:", structure=combined_args_dict)
+            message = AgentMessage(content="Received arguments:", structure=tool_start_dict)
             await self.langchain_tool_journal.write_message(message)
 
     async def on_tool_end(self, output: Any, tags: List[str] = None, **kwargs: Any) -> None:
