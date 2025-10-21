@@ -25,8 +25,9 @@ from re import Match
 from pydantic import ConfigDict
 
 from langchain_classic.agents.output_parsers.tools import ToolsAgentOutputParser
-from langchain_core.messages.base import BaseMessage
 from langchain_core.messages.ai import AIMessage
+from langchain_core.messages.base import BaseMessage
+from langchain_core.messages.tool import ToolMessage
 from langchain_core.outputs import Generation
 from langchain_core.runnables.config import RunnableConfig
 
@@ -77,6 +78,12 @@ class JournalingToolsAgentOutputParser(ToolsAgentOutputParser):
             for message in messages:
                 if isinstance(message, AIMessage):
                     use_input = message
+                elif isinstance(message, ToolMessage):
+                    # This allows for the "Invoking:" message to come through,
+                    # however it tends to happen after the AGENT_TOOL_RESULT message
+                    # has already been reported over our stream.
+                    await super().ainvoke(use_input, config, **kwargs)
+                    continue
 
             if use_input is None:
                 return None
@@ -143,4 +150,5 @@ class JournalingToolsAgentOutputParser(ToolsAgentOutputParser):
         if match:
             agent, params = match.groups()
             return agent.strip(), params.strip()
+        print(f"Failed to extract agent and params from: {text}")
         return None, None
