@@ -255,7 +255,7 @@ Some hints:
         """
         retval: Any = None
 
-        arguments_dict: Dict[str, Any] = ToolArgumentReporting.preprare_tool_start_dict(arguments)
+        arguments_dict: Dict[str, Any] = ToolArgumentReporting.prepare_tool_start_dict(arguments)
         message = AgentMessage(content="Received arguments:", structure=arguments_dict)
         await self.journal.write_message(message)
 
