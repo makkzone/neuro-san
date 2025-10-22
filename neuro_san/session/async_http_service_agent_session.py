@@ -17,6 +17,7 @@ from typing import Generator
 import asyncio
 import json
 
+from aiohttp import ClientPayloadError
 from aiohttp import ClientOSError
 from aiohttp import ClientSession
 from aiohttp import ClientTimeout
@@ -146,7 +147,7 @@ class AsyncHttpServiceAgentSession(AbstractHttpServiceAgentSession, AsyncAgentSe
                         result_dict = json.loads(accumulator.decode("utf-8"))
                         yield result_dict
 
-        except (asyncio.TimeoutError, ClientOSError) as exc:
+        except (asyncio.TimeoutError, ClientOSError, ClientPayloadError) as exc:
             # Pass on a couple of asserts that are known to represent
             # real problems that a client has to deal with.
             # We figure this is OK for streaming_chat() because normally
