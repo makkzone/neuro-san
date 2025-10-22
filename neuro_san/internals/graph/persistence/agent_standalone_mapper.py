@@ -20,12 +20,20 @@ class AgentStandaloneMapper(AgentNameMapper):
     between agent name and agent standalone definition file
     (not specified relative to registry manifest root)
     """
+    def __init__(self, path_method=Path):
+        """
+        Constructor
+
+        :param path_method: Optional Path method to use for path manipulations.
+            Default is pathlib.Path, but can be overridden for testing purposes.
+        """
+        self.path_method = path_method
 
     def agent_name_to_filepath(self, agent_name: str) -> str:
         """
         Agent name is its filepath.
         """
-        return str(Path(PurePosixPath(agent_name)))
+        return str(self.path_method(PurePosixPath(agent_name)))
 
     def filepath_to_agent_network_name(self, filepath: str) -> str:
         """
@@ -34,4 +42,4 @@ class AgentStandaloneMapper(AgentNameMapper):
         """
         # Take the file name only - with no file path, and no file name extension:
         # /root/file_path/my_agent.hocon => my_agent
-        return str(Path(filepath).stem)
+        return str(self.path_method(filepath).stem)
