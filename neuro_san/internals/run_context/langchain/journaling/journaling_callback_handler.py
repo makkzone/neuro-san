@@ -20,6 +20,7 @@ from langchain_core.agents import AgentAction
 from langchain_core.agents import AgentFinish
 from langchain_core.callbacks.base import AsyncCallbackHandler
 from langchain_core.documents import Document
+from langchain_core.messages import ToolMessage
 from langchain_core.messages.base import BaseMessage
 from langchain_core.outputs import LLMResult
 from langchain_core.outputs.chat_generation import ChatGeneration
@@ -182,8 +183,11 @@ class JournalingCallbackHandler(AsyncCallbackHandler):
 
         if "langchain_tool" in tags:
             # Log the tool output to the calling agent's journal
-            # Note that output is changed to str here since it can be anything including a list but
-            # we expect it to be a str or a list of dictionary with "text" as key.
+            # Note that output is changed to str here since it can be anything including a ToolMessage
+            # If that is the case, the content is taken as the output.
+            if isinstance(output, ToolMessage):
+                output = output.content
+
             await self.calling_agent_journal.write_message(
                 AgentToolResultMessage(content=str(output), tool_result_origin=self.origin)
             )
