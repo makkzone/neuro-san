@@ -20,6 +20,8 @@ import json
 from logging import getLogger
 from logging import Logger
 
+from aiohttp import ClientPayloadError
+
 from langchain_core.messages.ai import AIMessage
 from langchain_core.messages.base import BaseMessage
 
@@ -151,20 +153,36 @@ class ExternalActivation(AbstractCallableActivation):
         chat_request: Dict[str, Any] = self.gather_input(f"```json\n{json.dumps(self.arguments)}```",
                                                          self.sly_data)
 
-        messages_str: str = ""
-        try:
-            # Note that we are not await-ing the response here because what is returned is a generator.
-            # Proper await-ing for generator results is done in the "async for"-loop below.
-            chat_responses: AsyncGenerator[Dict[str, Any], None] = self.session.streaming_chat(chat_request)
-        except ValueError:
-            # Could not reach the server for the external agent, so tell about it
-            messages_str: str = f"Agent/tool {self.agent_url} was unreachable. " + \
-                                "Cannot rely on results from it as a tool."
-            full_name: str = Origination.get_full_name_from_origin(self.run_context.get_origin())
-            logger: Logger = getLogger(full_name)
-            logger.info(messages_str)
-            ai_message = AIMessage(content=messages_str)
-            return ai_message
+        full_name: str = Origination.get_full_name_from_origin(self.run_context.get_origin())
+        logger: Logger = getLogger(full_name)
+
+        chat_responses: AsyncGenerator[Dict[str, Any], None] = None
+        error_str: str = None
+        retries_remaining: int = 2
+        while chat_responses is None and retries_remaining > 0:
+            try:
+                # Note that we are not await-ing the response here because what is returned is a generator.
+                # Proper await-ing for generator results is done in the "async for"-loop below.
+                chat_responses = self.session.streaming_chat(chat_request)
+
+            except ClientPayloadError:
+                # This error happens infrequently. Worth a retry to get past it.
+                retries_remaining -= 1
+                if retries_remaining == 0:
+                    error_str: str = f"Agent/tool {self.agent_url} was unreachable due to ClientPayloadError. " + \
+                                     "Cannot rely on results from it as a tool."
+                else:
+                    logger.warning("Agent/tool %s was unreachable due to ClientPayloadError. Retrying.", self.agent_url)
+
+            except ValueError:
+                # Could not reach the server for the external agent, so tell about it
+                error_str: str = f"Agent/tool {self.agent_url} was unreachable. " + \
+                                 "Cannot rely on results from it as a tool."
+
+            if error_str is not None:
+                logger.info(error_str)
+                ai_message = AIMessage(content=error_str)
+                return ai_message
 
         # The asynchronous generator will wait until the next response is available
         # from the stream.  When the other side is done, the iterator will exit the loop.
