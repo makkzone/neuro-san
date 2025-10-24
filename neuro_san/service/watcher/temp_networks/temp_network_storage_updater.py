@@ -61,7 +61,7 @@ class TempNetworkStorageUpdater(AbstractStorageUpdater):
             self.reservations_storage.add(temp_storage)
 
             # Potentially create an external storage class
-            storage_class_name: str = environ.get("AGENT_EXTERNAL_RESERVATIONS_STORAGE")
+            storage_class_name: str = environ.get("AGENT_EXTERNAL_RESERVATIONS_STORAGE", "")
             external_storage: ReservationsStorage = ResolverUtil.create_instance(
                     storage_class_name,
                     "AGENT_EXTERNAL_RESERVATIONS_STORAGE env var",
