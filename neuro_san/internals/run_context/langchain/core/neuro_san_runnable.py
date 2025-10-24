@@ -12,6 +12,7 @@
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Optional
 from typing import Tuple
 from typing import Type
 from typing import Union
@@ -20,6 +21,8 @@ import traceback
 
 from logging import Logger
 from logging import getLogger
+
+from typing_extensions import override
 
 from pydantic import ConfigDict
 
@@ -64,7 +67,9 @@ class NeuroSanRunnable(Runnable, Journal):
     # Declarations of member variables here satisfy Pydantic style,
     # which is a type validator that langchain is based on which
     # is able to use JSON schema definitions to validate fields.
-    tool_caller: ToolCaller
+    agent_chain: Runnable
+
+    primary_llm: BaseLanguageModel
 
     invocation_context: InvocationContext
 
@@ -74,20 +79,19 @@ class NeuroSanRunnable(Runnable, Journal):
 
     origin: Dict[str, Any]
 
-    agent_chain: Runnable
-
-    llm: BaseLanguageModel
+    tool_caller: ToolCaller
 
     error_detector: ErrorDetector
 
     # Default logger
-    logger: Logger
+    logger: Optional[Logger]
 
     # This guy needs to be a pydantic class and in order to have
     # a non-pydantic Journal as a member, we need to do this.
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     # pylint: disable=redefined-builtin
+    @override
     async def ainvoke(
         self,
         input: Input,
@@ -161,7 +165,7 @@ class NeuroSanRunnable(Runnable, Journal):
         await self.journal.write_message(recent_human_message)
 
         # Attempt to count tokens/costs while invoking the agent.
-        token_counter = LangChainTokenCounter(self.llm, self.invocation_context, self.journal, self.origin)
+        token_counter = LangChainTokenCounter(self.primary_llm, self.invocation_context, self.journal, self.origin)
         await token_counter.count_tokens(self.invoke_agent_chain(inputs, runnable_config), max_execution_seconds)
 
     def prepare_runnable_config(self, session_id: str,

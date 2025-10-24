@@ -55,6 +55,7 @@ from neuro_san.internals.run_context.interfaces.run_context import RunContext
 from neuro_san.internals.run_context.interfaces.tool_caller import ToolCaller
 from neuro_san.internals.run_context.langchain.core.base_tool_factory import BaseToolFactory
 from neuro_san.internals.run_context.langchain.core.langchain_run import LangChainRun
+from neuro_san.internals.run_context.langchain.core.neuro_san_runnable import NeuroSanRunnable
 from neuro_san.internals.run_context.langchain.journaling.journaling_callback_handler import JournalingCallbackHandler
 from neuro_san.internals.run_context.langchain.token_counting.langchain_token_counter import LangChainTokenCounter
 from neuro_san.internals.run_context.langchain.util.api_key_error_check import ApiKeyErrorCheck
@@ -339,9 +340,24 @@ class LangChainRunContext(RunContext):
 
         run: Run = LangChainRun(self.run_id_base, self.chat_history)
         session_id: str = run.get_id()
-        # runnable_config: Dict[str, Any] = self.prepare_runnable_config(session_id)
 
-        await self.ainvoke(inputs, session_id)
+        # pylint: disable=abstract-class-instantiated
+        runnable = NeuroSanRunnable(agent_chain=self.agent_chain,
+                                    primary_llm=self.llm_resources.get_model(),
+                                    invocation_context=self.invocation_context,
+                                    journal=self.journal,
+                                    interceptor=self.interceptor,
+                                    origin=self.origin,
+                                    tool_caller=self.tool_caller,
+                                    error_detector=self.error_detector)
+        runnable_config: Dict[str, Any] = runnable.prepare_runnable_config(session_id)
+
+        # Franken-switch
+        use_runnable: bool = False
+        if use_runnable:
+            await runnable.ainvoke(input=inputs, config=runnable_config)
+        else:
+            await self.ainvoke(inputs, session_id)
 
         return run
 
