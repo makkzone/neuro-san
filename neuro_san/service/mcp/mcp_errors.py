@@ -26,6 +26,7 @@ class MCPError(Enum):
     InternalError = (-32603, "Internal error")
     ServerError = (-32000, "Server error")
     InvalidSession = (-33000, "Invalid Session")
+    InvalidProtocolVersion = (-33001, "Invalid Protocol Version")
 
 
     def __init__(self, num_value, str_label):

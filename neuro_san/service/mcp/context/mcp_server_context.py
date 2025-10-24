@@ -39,6 +39,13 @@ class MCPServerContext:
             raise RuntimeError(f"Cannot load MCP protocol schema from "
                                f"'{self.protocol_schema_filepath}': {str(exc)}") from exc
 
+    def get_protocol_version(self) -> str:
+        """
+        Get the MCP protocol version supported by this service.
+        :return: The MCP protocol version
+        """
+        return MCP_VERSION
+
     def get_request_validator(self) -> DictionaryValidator:
         """
         Get the request validator for this context.

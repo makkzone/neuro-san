@@ -18,6 +18,7 @@ import os
 from typing import Any
 from typing import List
 from typing import Dict
+from typing import Tuple
 
 import jsonschema
 from http import HTTPStatus
@@ -28,7 +29,7 @@ from neuro_san.internals.network_providers.agent_network_storage import AgentNet
 from neuro_san.service.http.interfaces.agent_authorizer import AgentAuthorizer
 from neuro_san.service.http.logging.http_logger import HttpLogger
 from neuro_san.service.mcp.context.mcp_server_context import MCPServerContext
-from neuro_san.service.mcp.session.mcp_session_manager import MCPSessionManager, MCP_SESSION_ID
+from neuro_san.service.mcp.session.mcp_session_manager import MCPSessionManager, MCP_SESSION_ID, MCP_PROTOCOL_VERSION
 from neuro_san.service.mcp.util.mcp_errors_util import MCPErrorsUtil
 from neuro_san.service.mcp.mcp_errors import MCPError
 from neuro_san.service.mcp.processors.mcp_tools_processor import MCPToolsProcessor
@@ -114,50 +115,29 @@ class MCPRootHandler(BaseRequestHandler):
         # We have valid MCP request:
         request_id = data.get("id", "absent")
         method: str = data.get("method")
-        session_id: str = self.request.headers.get("Mcp-Session-Id", None)
-        request_done: bool = False
-        try:
-            if method == "initialize":
-                # Handle handshake/initialize session request
-                handshake_processor: MCPInitializeProcessor = MCPInitializeProcessor(self.mcp_context, self.logger)
-                result_dict, session_id = await handshake_processor.initialize_handshake(request_id, metadata, data["params"])
-                self.set_header(MCP_SESSION_ID, session_id)
-                self.set_status(HTTPStatus.OK)
-                self.write(result_dict)
-                request_done = True
-            elif method == "notifications/initialized":
-                # Handle client acknowledgement of initialization response,
-                # this activates the session on the server side for further operations.
-                handshake_processor: MCPInitializeProcessor = MCPInitializeProcessor(self.mcp_context, self.logger)
-                result: bool = await handshake_processor.activate_session(session_id, metadata)
-                response_code: int = HTTPStatus.ACCEPTED if result else HTTPStatus.NOT_FOUND
-                self.set_header(MCP_SESSION_ID, session_id)
-                self.set_status(response_code)
-                # We do not have any response body for this request
-                request_done = True
-            elif method == "ping":
-                # Handle client-side ping,
-                # we don't care about sessions here.
-                ping_processor: MCPPingProcessor= MCPPingProcessor(self.logger)
-                result: Dict[str, Any] = await ping_processor.ping(session_id, metadata)
-                response_code: int = HTTPStatus.OK
-                self.set_status(response_code)
-                # We do not have any response body for this request
-                request_done = True
-        except Exception as exc:  # pylint: disable=broad-exception-caught
-            error_msg: Dict[str, Any] = \
-                MCPErrorsUtil.get_protocol_error(request_id, MCPError.ServerError, str(exc))
-            self.set_status(HTTPStatus.INTERNAL_SERVER_ERROR)
-            self.write(error_msg)
-            self.logger.error(self.get_metadata(), "error: Server error")
-            request_done = True
-        finally:
-            # We are done with response stream:
-            if request_done:
-                self.do_finish()
-                return
+        session_id: str = self.request.headers.get(MCP_SESSION_ID, None)
+        protocol_version: str = self.request.headers.get(MCP_PROTOCOL_VERSION, None)
+        if protocol_version:
+            protocol_version = protocol_version.strip()
 
-        # For all other methods, we need to have valid session:
+        # First check if we have handshake/initialize session requests:
+        new_session_id, request_done = await self.handle_handshake(method, data, session_id, request_id, metadata)
+        if request_done:
+            if new_session_id:
+                self.set_header(MCP_SESSION_ID, new_session_id)
+            self.do_finish()
+            return
+
+        # For all other methods, we need to have valid protocol version and valid session:
+        if protocol_version != self.mcp_context.get_protocol_version():
+            extra_error: str = f"unsupported protocol version {protocol_version}"
+            error_msg: Dict[str, Any] =\
+                MCPErrorsUtil.get_protocol_error(request_id, MCPError.InvalidProtocolVersion, extra_error)
+            self.set_status(HTTPStatus.BAD_REQUEST)
+            self.write(error_msg)
+            self.logger.error(self.get_metadata(), f"error: {extra_error}")
+            self.do_finish()
+            return
         session_active: bool = False
         if session_id is not None:
             session_manager: MCPSessionManager = self.mcp_context.get_session_manager()
@@ -213,6 +193,64 @@ class MCPRootHandler(BaseRequestHandler):
         finally:
             # We are done with response stream:
             self.do_finish()
+
+    async def handle_handshake(
+            self,
+            method: str,
+            request_data: Dict[str, Any],
+            session_id: str,
+            request_id,
+            metadata: Dict[str, Any]) -> Tuple[str, bool]:
+        """
+        Handle handshake/initialize session request if request method is applicable.
+        :param method: MCP method name
+        :param request_data: MCP request data dictionary
+        :param session_id: MCP client session id taken from request headers
+        :request_id: MCP request id
+        :param metadata: http-level request metadata;
+        :return: tuple of 2 values:
+                 first - new session id if it was generated here;
+                         None otherwise
+                second - True if request was handled here;
+                         False otherwise
+        """
+        try:
+            if method == "initialize":
+                # Handle handshake/initialize session request
+                handshake_processor: MCPInitializeProcessor = MCPInitializeProcessor(self.mcp_context, self.logger)
+                result_dict, session_id =\
+                    await handshake_processor.initialize_handshake(request_id, metadata, request_data["params"])
+                self.set_header(MCP_SESSION_ID, session_id)
+                self.set_status(HTTPStatus.OK)
+                self.write(result_dict)
+                return session_id, True
+            elif method == "notifications/initialized":
+                # Handle client acknowledgement of initialization response,
+                # this activates the session on the server side for further operations.
+                handshake_processor: MCPInitializeProcessor = MCPInitializeProcessor(self.mcp_context, self.logger)
+                result: bool = await handshake_processor.activate_session(session_id, metadata)
+                response_code: int = HTTPStatus.ACCEPTED if result else HTTPStatus.NOT_FOUND
+                self.set_header(MCP_SESSION_ID, session_id)
+                self.set_status(response_code)
+                # We do not have any response body for this request
+                return None, True
+            elif method == "ping":
+                # Handle client-side ping,
+                # we don't care about sessions here.
+                ping_processor: MCPPingProcessor= MCPPingProcessor(self.logger)
+                _ = await ping_processor.ping(session_id, metadata)
+                response_code: int = HTTPStatus.OK
+                self.set_status(response_code)
+                # We do not have any response body for this request
+                return None, True
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            error_msg: Dict[str, Any] = \
+                MCPErrorsUtil.get_protocol_error(request_id, MCPError.ServerError, str(exc))
+            self.set_status(HTTPStatus.INTERNAL_SERVER_ERROR)
+            self.write(error_msg)
+            self.logger.error(self.get_metadata(), "error: Server error")
+            return None, True
+        return None, False
 
     async def delete(self):
         """
