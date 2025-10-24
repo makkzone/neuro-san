@@ -22,8 +22,6 @@ import traceback
 from logging import Logger
 from logging import getLogger
 
-from typing_extensions import override
-
 from pydantic import ConfigDict
 
 from langchain_classic.callbacks.tracers.logging import LoggingCallbackHandler
@@ -33,8 +31,8 @@ from langchain_core.language_models.base import BaseLanguageModel
 from langchain_core.messages.ai import AIMessage
 from langchain_core.messages.base import BaseMessage
 from langchain_core.runnables.base import Runnable
-from langchain_core.runnables.base import RunnableSerializable
 from langchain_core.runnables.config import RunnableConfig
+from langchain_core.runnables.passthrough import RunnablePassthrough
 from langchain_core.runnables.utils import Input
 from langchain_core.runnables.utils import Output
 
@@ -60,7 +58,7 @@ API_ERROR_TYPES: Tuple[Type[Any], ...] = ResolverUtil.create_type_tuple([
                                          ])
 
 
-class NeuroSanRunnable(RunnableSerializable):
+class NeuroSanRunnable(RunnablePassthrough):
     """
     RunnablePassthrough implementation that intercepts journal messages
     """
@@ -78,37 +76,37 @@ class NeuroSanRunnable(RunnableSerializable):
 
     interceptor: InterceptingJournal
 
-    origin: Dict[str, Any]
+    origin: List[Dict[str, Any]]
 
     tool_caller: ToolCaller
 
     error_detector: ErrorDetector
 
+    session_id: str
+
     # Default logger
-    logger: Optional[Logger]
+    logger: Optional[Logger] = None
 
     # This guy needs to be a pydantic class and in order to have
     # a non-pydantic Journal as a member, we need to do this.
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    # pylint: disable=redefined-builtin
-    @override
-    async def ainvoke(
+    def __init__(
         self,
-        input: Input,
-        config: RunnableConfig | None = None,
         **kwargs: Any,
-    ) -> Output:
+    ) -> None:
+        """
+        Constructor
+        """
+        super().__init__(afunc=self.do_it, **kwargs)
+
+    # pylint: disable=redefined-builtin
+    async def do_it(self, inputs: Input) -> Output:
         """
         Transform a single input into an output.
 
         Args:
-            input: The input to the `Runnable`.
-            config: A config to use when invoking the `Runnable`.
-                The config supports standard keys like `'tags'`, `'metadata'` for
-                tracing purposes, `'max_concurrency'` for controlling how much work to
-                do in parallel, and other keys. Please refer to the `RunnableConfig`
-                for more details.
+            inputs: The input to the `Runnable`.
 
         Returns:
             The output of the `Runnable`.
@@ -116,17 +114,15 @@ class NeuroSanRunnable(RunnableSerializable):
         self.logger = getLogger(self.__class__.__name__)
         outputs: Dict[str, Any] = {}
 
-        session_id: str = config.get("configurable").get("session_id")
-        await self.main_invoke(input, session_id)
+        await self.main_invoke(inputs)
 
         return outputs
 
-    async def main_invoke(self, inputs: Dict[str, Any], session_id: str):
+    async def main_invoke(self, inputs: Dict[str, Any]):
         """
         Workhorse
 
         :param inputs: Inputs to process
-        :param session_id: The session/run id to report
         """
 
         # Create an agent executor and invoke it with the most recent human message
@@ -159,7 +155,7 @@ class NeuroSanRunnable(RunnableSerializable):
             # to the logs.  Add this because some people are interested in it.
             callbacks.append(LoggingCallbackHandler(self.logger))
 
-        runnable_config: Dict[str, Any] = self.prepare_runnable_config(session_id, callbacks, recursion_limit)
+        runnable_config: Dict[str, Any] = self.prepare_runnable_config(self.session_id, callbacks, recursion_limit)
 
         # Chat history is updated in write_message
         recent_human_message: BaseMessage = inputs.get("input")
@@ -347,6 +343,7 @@ class NeuroSanRunnable(RunnableSerializable):
         output = self.error_detector.handle_error(output, backtrace)
         return output
 
+    # pylint: disable=redefined-builtin
     def invoke(
         self,
         input: Input,

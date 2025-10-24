@@ -342,7 +342,7 @@ class LangChainRunContext(RunContext):
         session_id: str = run.get_id()
 
         # Franken-switch
-        use_runnable: bool = False
+        use_runnable: bool = True
         if use_runnable:
 
             runnable = NeuroSanRunnable(agent_chain=self.agent_chain,
@@ -352,7 +352,8 @@ class LangChainRunContext(RunContext):
                                         interceptor=self.interceptor,
                                         origin=self.origin,
                                         tool_caller=self.tool_caller,
-                                        error_detector=self.error_detector)
+                                        error_detector=self.error_detector,
+                                        session_id=session_id)
             runnable_config: Dict[str, Any] = runnable.prepare_runnable_config(session_id)
 
             await runnable.ainvoke(input=inputs, config=runnable_config)
