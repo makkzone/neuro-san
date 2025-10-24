@@ -31,7 +31,7 @@ from langchain_core.language_models.base import BaseLanguageModel
 from leaf_common.asyncio.asyncio_executor import AsyncioExecutor
 from neuro_san.internals.interfaces.context_type_llm_factory import ContextTypeLlmFactory
 from neuro_san.internals.interfaces.invocation_context import InvocationContext
-from neuro_san.internals.journals.originating_journal import OriginatingJournal
+from neuro_san.internals.journals.journal import Journal
 from neuro_san.internals.messages.agent_message import AgentMessage
 from neuro_san.internals.messages.origination import Origination
 from neuro_san.internals.run_context.langchain.token_counting.get_llm_token_callback import get_llm_token_callback
@@ -55,7 +55,8 @@ class LangChainTokenCounter:
 
     def __init__(self, llm: BaseLanguageModel,
                  invocation_context: InvocationContext,
-                 journal: OriginatingJournal):
+                 journal: Journal,
+                 origin: List[Dict[str, Any]]):
         """
         Constructor
 
@@ -63,10 +64,12 @@ class LangChainTokenCounter:
         :param invocation_context: The InvocationContext
         :param journal: The OriginatingJournal which through which this
                     will send token count AGENT messages
+        :param origin: The origin that will be applied to all messages.
         """
         self.llm: BaseLanguageModel = llm
         self.invocation_context: InvocationContext = invocation_context
-        self.journal: OriginatingJournal = journal
+        self.journal: Journal = journal
+        self.origin: List[Dict[str, Any]] = origin
         self.debug: bool = False
 
     async def count_tokens(self, awaitable: Awaitable, max_execution_seconds: float = None) -> Any:
@@ -99,8 +102,7 @@ class LangChainTokenCounter:
         callback: AsyncCallbackHandler = None
         # Record origin information in our own context var so we can associate
         # with the langchain callback context vars more easily.
-        origin: List[Dict[str, Any]] = self.journal.get_origin()
-        origin_str: str = Origination.get_full_name_from_origin(origin)
+        origin_str: str = Origination.get_full_name_from_origin(self.origin)
         ORIGIN_INFO.set(origin_str)
 
         # Use the context manager to count tokens as per

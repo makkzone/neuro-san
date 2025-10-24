@@ -27,11 +27,11 @@
         # be a dictionary and have at least the "model_name" spec-ed out, but other
         # key/value pairs can further describe how the nth llm should be configured.
         "fallbacks": [
-            {   
+    #        {   
                 # This first preferred model is intended to fail with this agent network
                 # because the prompts are too big.  The next llm should kick in as a fallback.
-                "model_name": "gpt-4"
-            },
+    #            "model_name": "gpt-4"
+    #        },
             {
                 "model_name": "gpt-4o"
             }

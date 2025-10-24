@@ -38,7 +38,6 @@ from langchain_core.messages.human import HumanMessage
 from langchain_core.messages.system import SystemMessage
 from langchain_core.prompts.chat import ChatPromptTemplate
 from langchain_core.runnables.base import Runnable
-from langchain_core.runnables.passthrough import RunnablePassthrough
 from langchain_core.tools.base import BaseTool
 
 from leaf_common.config.resolver_util import ResolverUtil
@@ -62,6 +61,7 @@ from neuro_san.internals.run_context.langchain.core.langchain_openai_function_to
     import LangChainOpenAIFunctionTool
 from neuro_san.internals.run_context.langchain.core.langchain_run import LangChainRun
 from neuro_san.internals.run_context.langchain.journaling.journaling_callback_handler import JournalingCallbackHandler
+from neuro_san.internals.run_context.langchain.journaling.journaling_passthrough import JournalingPassthrough
 from neuro_san.internals.run_context.langchain.mcp.langchain_mcp_adapter import LangChainMcpAdapter
 from neuro_san.internals.run_context.langchain.token_counting.langchain_token_counter import LangChainTokenCounter
 from neuro_san.internals.run_context.langchain.util.api_key_error_check import ApiKeyErrorCheck
@@ -108,7 +108,8 @@ class LangChainRunContext(RunContext):
                 to carry on a previous conversation, possibly from a different server.
         """
         self.chat_history: List[BaseMessage] = []
-        self.journal: OriginatingJournal = None
+        self.journal: Journal = None
+        self.passthrough: JournalingPassthrough = None
         self.llm_resources: LangChainLlmResources = None
         self.agent_chain: Runnable = None
 
@@ -151,8 +152,8 @@ class LangChainRunContext(RunContext):
             self.logger = getLogger(full_name)
 
         if self.invocation_context is not None:
-            base_journal: Journal = self.invocation_context.get_journal()
-            self.journal = OriginatingJournal(base_journal, self.origin, self.chat_history)
+            # Sets up self.journal
+            self.update_invocation_context(self.invocation_context)
 
     async def create_resources(self, agent_name: str,
                                instructions: str,
@@ -271,7 +272,7 @@ class LangChainRunContext(RunContext):
         # By skipping this step, our agent functions as a pure LLM-driven system with a defined role,
         # without tool invocation logic influencing its decision-making.
 
-        agent = RunnablePassthrough() | prompt_template | meat
+        agent = prompt_template | meat | self.passthrough
 
         return agent
 
@@ -585,13 +586,19 @@ class LangChainRunContext(RunContext):
             # to the logs.  Add this because some people are interested in it.
             callbacks.append(LoggingCallbackHandler(self.logger))
 
+        # Set up a run name for tracing purposes
+        metadata: Dict[str, Any] = self.invocation_context.get_metadata()
+        run_name: str = metadata.get("request_id", "<unknown>") + "-" + \
+            Origination.get_full_name_from_origin(self.origin)
+
         # Add callbacks as an invoke config
         invoke_config = {
             "configurable": {
                 "session_id": run.get_id()
             },
             "callbacks": callbacks,
-            "recursion_limit": recursion_limit
+            "recursion_limit": recursion_limit,
+            "run_name": run_name
         }
 
         # Chat history is updated in write_message
@@ -599,7 +606,7 @@ class LangChainRunContext(RunContext):
 
         # Attempt to count tokens/costs while invoking the agent.
         llm: BaseLanguageModel = self.llm_resources.get_model()
-        token_counter = LangChainTokenCounter(llm, self.invocation_context, self.journal)
+        token_counter = LangChainTokenCounter(llm, self.invocation_context, self.journal, self.origin)
         await token_counter.count_tokens(self.ainvoke(inputs, invoke_config), max_execution_seconds)
 
         return run
@@ -868,6 +875,7 @@ class LangChainRunContext(RunContext):
         self.recent_human_message = None
         self.llm_resources = None
         self.journal = None
+        self.passthrough = None
 
     def get_agent_tool_spec(self) -> Dict[str, Any]:
         """
@@ -911,8 +919,10 @@ class LangChainRunContext(RunContext):
         """
         self.invocation_context = invocation_context
 
+        # Make a nested chain where each journal is wrapped by the next
         base_journal: Journal = self.invocation_context.get_journal()
-        self.journal = OriginatingJournal(base_journal, self.origin, self.chat_history)
+        self.passthrough = JournalingPassthrough(wrapped_journal=base_journal, origin=self.origin)
+        self.journal = OriginatingJournal(self.passthrough, self.origin, self.chat_history)
 
     def update_from_chat_context(self, chat_context: Dict[str, Any]):
         """

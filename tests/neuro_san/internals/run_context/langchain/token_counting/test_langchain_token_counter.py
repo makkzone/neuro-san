@@ -26,11 +26,13 @@ class TestLangChainTokenCounter:
         mock_llm = Mock()
         mock_invocation_context = Mock()
         mock_journal = Mock()
+        mock_origin = Mock()
 
         return LangChainTokenCounter(
             llm=mock_llm,
             invocation_context=mock_invocation_context,
-            journal=mock_journal
+            journal=mock_journal,
+            origin=mock_origin
         )
 
     def test_sum_all_tokens_single_provider_single_model(self, token_counter):
