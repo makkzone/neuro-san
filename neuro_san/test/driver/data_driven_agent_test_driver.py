@@ -10,6 +10,8 @@
 #
 # END COPYRIGHT
 
+import os
+import shutil
 from typing import Any
 from typing import Dict
 from typing import Generator
@@ -222,8 +224,18 @@ Need at least {num_need_success} to consider {hocon_file} test to be successful.
         # Prepare the processor
         now = datetime.now()
         datestr: str = now.strftime("%Y-%m-%d-%H:%M:%S")
+        thinking_file: str = f"/tmp/agent_test/{datestr}_agent.txt"
         thinking_dir: str = f"/tmp/agent_test/{datestr}_agent"
-        input_processor = StreamingInputProcessor("", None, session, thinking_dir)
+
+        # Remove any contents that might be there already.
+        # Writing over existing dir will just confuse output.
+        # Although it is unlikely that two tests run at the same time...
+        if os.path.exists(thinking_dir):
+            shutil.rmtree(thinking_dir)
+        # Create the directory anew
+        os.makedirs(thinking_dir)
+
+        input_processor = StreamingInputProcessor("", thinking_file, session, thinking_dir)
         processor: BasicMessageProcessor = input_processor.get_message_processor()
 
         # Prepare the request
