@@ -316,7 +316,6 @@ class LangChainRunContext(RunContext):
         run = LangChainRun(self.run_id_base, self.chat_history)
         return run
 
-    # pylint: disable=too-many-locals
     async def wait_on_run(self, run: Run, journal: Journal = None) -> Run:
         """
         Loops on the given run's status for model invokation.
@@ -327,7 +326,26 @@ class LangChainRunContext(RunContext):
         :param journal: The Journal which captures the "thinking" messages.
         :return: An potentially updated run
         """
-        _ = journal
+        _ = run, journal
+
+        # Chat history is updated in write_message() below, so to save on
+        # some tokens, make a shallow copy of it here as we send it to the LLM
+        previous_chat_history: List[BaseMessage] = copy(self.chat_history)
+
+        inputs = {
+            "chat_history": previous_chat_history,
+            "input": self.recent_human_message.content
+        }
+
+        run: Run = LangChainRun(self.run_id_base, self.chat_history)
+        session_id: str = run.get_id()
+        # runnable_config: Dict[str, Any] = self.prepare_runnable_config(session_id)
+
+        await self.ainvoke(inputs, session_id)
+
+        return run
+
+    async def ainvoke(self, inputs: Dict[str, Any], session_id: str):
 
         # Create an agent executor and invoke it with the most recent human message
         # as input.
@@ -342,17 +360,6 @@ class LangChainRunContext(RunContext):
         # Per advice from https://python.langchain.com/docs/how_to/migrate_agent/#max_iterations
         max_iterations: int = agent_spec.get("max_iterations", 20)
         recursion_limit: int = max_iterations * 2 + 1
-
-        run: Run = LangChainRun(self.run_id_base, self.chat_history)
-
-        # Chat history is updated in write_message() below, so to save on
-        # some tokens, make a shallow copy of it here as we send it to the LLM
-        previous_chat_history: List[BaseMessage] = copy(self.chat_history)
-
-        inputs = {
-            "chat_history": previous_chat_history,
-            "input": self.recent_human_message.content
-        }
 
         # Create the list of callbacks to pass when invoking
         parent_origin: List[Dict[str, Any]] = self.get_origin()
@@ -370,7 +377,7 @@ class LangChainRunContext(RunContext):
             # to the logs.  Add this because some people are interested in it.
             callbacks.append(LoggingCallbackHandler(self.logger))
 
-        runnable_config: Dict[str, Any] = self.prepare_runnable_config(run.get_id(), callbacks, recursion_limit)
+        runnable_config: Dict[str, Any] = self.prepare_runnable_config(session_id, callbacks, recursion_limit)
 
         # Chat history is updated in write_message
         await self.journal.write_message(self.recent_human_message)
@@ -379,8 +386,6 @@ class LangChainRunContext(RunContext):
         llm: BaseLanguageModel = self.llm_resources.get_model()
         token_counter = LangChainTokenCounter(llm, self.invocation_context, self.journal, self.origin)
         await token_counter.count_tokens(self.invoke_agent_chain(inputs, runnable_config), max_execution_seconds)
-
-        return run
 
     def prepare_runnable_config(self, session_id: str,
                                 callbacks: List[BaseCallbackHandler] = None,
