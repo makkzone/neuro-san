@@ -23,6 +23,7 @@ from logging import Logger
 from logging import getLogger
 
 from pydantic import ConfigDict
+from typing_extensions import override
 
 from langchain_classic.callbacks.tracers.logging import LoggingCallbackHandler
 from langchain_core.agents import AgentFinish
@@ -30,7 +31,9 @@ from langchain_core.callbacks.base import BaseCallbackHandler
 from langchain_core.language_models.base import BaseLanguageModel
 from langchain_core.messages.ai import AIMessage
 from langchain_core.messages.base import BaseMessage
+from langchain_core.runnables.base import Other
 from langchain_core.runnables.base import Runnable
+from langchain_core.runnables.base import RunnableConfig
 from langchain_core.runnables.passthrough import RunnablePassthrough
 from langchain_core.runnables.utils import Input
 from langchain_core.runnables.utils import Output
@@ -100,6 +103,19 @@ class NeuroSanRunnable(RunnablePassthrough):
         super().__init__(afunc=self.do_it, **kwargs)
 
     # pylint: disable=redefined-builtin
+    @override
+    async def ainvoke(
+        self,
+        input: Other,
+        config: RunnableConfig | None = None,
+        **kwargs: Any | None,
+    ) -> Other:
+
+        _: Other = await super().ainvoke(input, config, **kwargs)
+        outputs: Dict[str, Any] = self.get_intercepted_outputs()
+        return outputs
+
+    # pylint: disable=redefined-builtin
     async def do_it(self, inputs: Input) -> Output:
         """
         Transform a single input into an output.
@@ -111,11 +127,10 @@ class NeuroSanRunnable(RunnablePassthrough):
             The output of the `Runnable`.
         """
         self.logger = getLogger(self.__class__.__name__)
-        outputs: Dict[str, Any] = {}
 
         await self.main_invoke(inputs)
 
-        return outputs
+        return inputs
 
     async def main_invoke(self, inputs: Dict[str, Any]):
         """
@@ -347,3 +362,12 @@ class NeuroSanRunnable(RunnablePassthrough):
         # See if we had some kind of error and format accordingly, if asked for.
         output = self.error_detector.handle_error(output, backtrace)
         return output
+
+    def get_intercepted_outputs(self) -> Dict[str, Any]:
+        """
+        :return: the intercepted outputs
+        """
+        outputs: Dict[str, Any] = {
+            "messages": self.interceptor.get_messages()
+        }
+        return outputs
