@@ -13,7 +13,11 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Literal
+from typing import Optional
 from typing import Union
+
+from json import dumps
+from typing_extensions import override
 
 from langchain_core.messages.base import BaseMessage
 
@@ -22,6 +26,8 @@ class AgentMessage(BaseMessage):
     """
     BaseMessage implementation of a message from an agent
     """
+
+    structure: Optional[Dict[str, Any]] = None
 
     type: Literal["agent"] = "agent"
 
@@ -37,3 +43,20 @@ class AgentMessage(BaseMessage):
         """
         super().__init__(content=content, **kwargs)
         self.structure: Dict[str, Any] = structure
+
+    @override
+    def pretty_repr(self, html: bool = False) -> str:
+        """
+        Return a pretty representation of the message for display.
+
+        Args:
+            html: Whether to return an HTML-formatted string.
+
+        Returns:
+            A pretty representation of the message.
+
+        """
+        pretty: str = super().pretty_repr(html=html)
+        if self.structure:
+            pretty += "\n" + dumps(self.structure, indent=4, sort_keys=True)
+        return pretty
