@@ -18,12 +18,12 @@ from typing import Literal
 from typing import Optional
 from typing import Union
 
-from langchain_core.messages.base import BaseMessage
+from neuro_san.internals.messages.traced_message import TracedMessage
 
 
-class AgentMessage(BaseMessage):
+class AgentMessage(TracedMessage):
     """
-    BaseMessage implementation of a message from an agent
+    TracedMessage implementation of a message from an agent
     """
 
     structure: Optional[Dict[str, Any]] = None
@@ -40,25 +40,10 @@ class AgentMessage(BaseMessage):
         Args:
             content: The string contents of the message.
             structure: A dictionary to pack into the message
-            kwargs: Additional fields to pass to the
+            kwargs: Additional fields to pass to initialize
         """
-        if other:
-            additional_kwargs: Dict[str, Any] = {}
-            if other.content and len(other.content) > 0:
-                additional_kwargs["content"] = other.content
-            if other.structure:
-                additional_kwargs["structure"] = other.structure
-            super().__init__(content="", additional_kwargs=additional_kwargs, **kwargs)
-        else:
-            super().__init__(content=content, **kwargs)
-            self.structure: Dict[str, Any] = structure
-
-    @property
-    def lc_serializable(self) -> bool:
-        """
-        Indicates if the object can be serialized by LangChain.
-        """
-        return True
+        super().__init__(content=content, other=other, **kwargs)
+        self.structure: Dict[str, Any] = structure
 
     @property
     def lc_kwargs(self) -> Dict[str, Any]:
@@ -68,5 +53,4 @@ class AgentMessage(BaseMessage):
         return {
             "content": self.content,
             "structure": self.structure,
-            **self.additional_kwargs,
         }
