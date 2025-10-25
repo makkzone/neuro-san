@@ -37,17 +37,17 @@ class AgentToolResultMessage(AIMessage, TracedMessage):
 
     def __init__(self, content: Union[str, List[Union[str, Dict]]] = "",
                  tool_result_origin: List[Dict[str, Any]] = None,
-                 other: AgentToolResultMessage = None,
+                 trace_source: AgentToolResultMessage = None,
                  **kwargs: Any) -> None:
         """
-        Pass in content as positional arg.
+        Constructor
 
-        Args:
-            content: The string contents of the message.
-            tool_result_origin: The origin describing where the tool result came from
-            kwargs: Additional fields to pass to the
+        :param content: The string contents of the message.
+        :param structure: A dictionary to pack into the message
+        :param trace_source: A message of the same type to prepare for tracing display
+        :param kwargs: Additional fields to pass to initialize
         """
-        super().__init__(content=content, other=other, **kwargs)
+        super().__init__(content=content, trace_source=trace_source, **kwargs)
         self.tool_result_origin: List[Dict[str, Any]] = tool_result_origin
 
     @property

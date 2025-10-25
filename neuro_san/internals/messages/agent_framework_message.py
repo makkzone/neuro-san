@@ -16,7 +16,9 @@ from typing import Dict
 from typing import List
 from typing import Literal
 from typing import Optional
+from typing import Tuple
 from typing import Union
+
 
 from neuro_san.internals.messages.traced_message import TracedMessage
 
@@ -37,7 +39,7 @@ class AgentFrameworkMessage(TracedMessage):
                  chat_context: Dict[str, Any] = None,
                  sly_data: Dict[str, Any] = None,
                  structure: Dict[str, Any] = None,
-                 other: AgentFrameworkMessage = None,
+                 trace_source: AgentFrameworkMessage = None,
                  **kwargs: Any) -> None:
         """
         Pass in content as positional arg.
@@ -51,9 +53,10 @@ class AgentFrameworkMessage(TracedMessage):
                         that had been optionally detected by the system as JSON text.
                         The idea is to have the server do the hard parsing so the
                         multitude of clients do not have to rediscover how to best do it.
+        :param trace_source: A message of the same type to prepare for tracing display
         :param kwargs: Additional fields to pass to the superclass
         """
-        super().__init__(content=content, other=other, **kwargs)
+        super().__init__(content=content, trace_source=trace_source, **kwargs)
         self.chat_context: Dict[str, Any] = chat_context
         self.sly_data: Dict[str, Any] = sly_data
         self.structure: Dict[str, Any] = structure
@@ -69,3 +72,21 @@ class AgentFrameworkMessage(TracedMessage):
             "sly_data": self.sly_data,
             "chat_context": self.chat_context,
         }
+
+    def translate_for_trace(self, key: str, value: Any) -> Tuple[str, Any]:
+        """
+        :param key: The key to consider/translate.
+        :param value: The value to consider/translate
+        :return: A tuple with the new key and new value to be shown in the trace.
+                New keys that are None are not included in the additional_kwargs.
+                The default implementation simply ensures that there is something in the
+                value to trace display to maximize information.
+        """
+        new_key, new_value = super().translate_for_trace(key, value)
+        if not new_key:
+            return None, None
+
+        if new_key == "sly_data":
+            new_value = "<redacted>"
+
+        return new_key, new_value
