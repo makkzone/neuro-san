@@ -9,26 +9,37 @@
 # neuro-san SDK Software in commercial settings.
 #
 # END COPYRIGHT
+from __future__ import annotations
+
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Literal
+from typing import Optional
+from typing import Tuple
 from typing import Union
 
-from langchain_core.messages.base import BaseMessage
+
+from neuro_san.internals.messages.traced_message import TracedMessage
 
 
-class AgentFrameworkMessage(BaseMessage):
+class AgentFrameworkMessage(TracedMessage):
     """
-    BaseMessage implementation of a message from the agent framework
+    TracedMessage implementation of a message from the agent framework
     """
+
+    structure: Optional[Dict[str, Any]] = None
+    sly_data: Optional[Dict[str, Any]] = None
+    chat_context: Optional[Dict[str, Any]] = None
 
     type: Literal["agent-framework"] = "agent-framework"
 
-    def __init__(self, content: Union[str, List[Union[str, Dict]]] = None,
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
+    def __init__(self, content: Union[str, List[Union[str, Dict]]] = "",
                  chat_context: Dict[str, Any] = None,
                  sly_data: Dict[str, Any] = None,
                  structure: Dict[str, Any] = None,
+                 trace_source: AgentFrameworkMessage = None,
                  **kwargs: Any) -> None:
         """
         Pass in content as positional arg.
@@ -42,9 +53,43 @@ class AgentFrameworkMessage(BaseMessage):
                         that had been optionally detected by the system as JSON text.
                         The idea is to have the server do the hard parsing so the
                         multitude of clients do not have to rediscover how to best do it.
+        :param trace_source: A message of the same type to prepare for tracing display
         :param kwargs: Additional fields to pass to the superclass
         """
-        super().__init__(content=content, **kwargs)
+        super().__init__(content=content, trace_source=trace_source, **kwargs)
         self.chat_context: Dict[str, Any] = chat_context
         self.sly_data: Dict[str, Any] = sly_data
         self.structure: Dict[str, Any] = structure
+
+    @property
+    def lc_kwargs(self) -> Dict[str, Any]:
+        """
+        :return: the keyword arguments for serialization.
+        """
+        return {
+            "content": self.content,
+            "structure": self.structure,
+            "sly_data": self.sly_data,
+            "chat_context": self.chat_context,
+        }
+
+    def translate_for_trace(self, key: str, value: Any) -> Tuple[str, Any]:
+        """
+        :param key: The key to consider/translate.
+        :param value: The value to consider/translate
+        :return: A tuple with the new key and new value to be shown in the trace.
+                New keys that are None are not included in the additional_kwargs.
+                The default implementation simply ensures that there is something in the
+                value to trace display to maximize information.
+        """
+        new_key, new_value = super().translate_for_trace(key, value)
+        if not new_key:
+            return None, None
+
+        # Specifically redact any sly_data.  The intent here is to not
+        # transmit any sensitive information that might make it to some
+        # other host.
+        if new_key == "sly_data":
+            new_value = "<redacted>"
+
+        return new_key, new_value

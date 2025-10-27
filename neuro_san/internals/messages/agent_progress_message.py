@@ -9,31 +9,47 @@
 # neuro-san SDK Software in commercial settings.
 #
 # END COPYRIGHT
+from __future__ import annotations
+
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Literal
+from typing import Optional
 from typing import Union
 
-from langchain_core.messages.base import BaseMessage
+from neuro_san.internals.messages.traced_message import TracedMessage
 
 
-class AgentProgressMessage(BaseMessage):
+class AgentProgressMessage(TracedMessage):
     """
-    BaseMessage implementation of a progress message from an agent or CodedTool
+    TracedMessage implementation of a progress message from an agent or CodedTool
     """
+    structure: Optional[Dict[str, Any]] = None
 
     type: Literal["agent-progress"] = "agent-progress"
 
     def __init__(self, content: Union[str, List[Union[str, Dict]]] = "",
-                 structure: Dict[str, Any] = None, **kwargs: Any) -> None:
+                 structure: Dict[str, Any] = None,
+                 trace_source: AgentProgressMessage = None,
+                 **kwargs: Any) -> None:
         """
-        Pass in content as positional arg.
+        Constructor
 
-        Args:
-            content: The string contents of the message.
-            structure: A dictionary to pack into the message
-            kwargs: Additional fields to pass to the
+        :param content: The string contents of the message.
+        :param structure: A dictionary to pack into the message
+        :param trace_source: A message of the same type to prepare for tracing display
+        :param kwargs: Additional fields to pass to initialize
         """
-        super().__init__(content=content, **kwargs)
+        super().__init__(content=content, trace_source=trace_source, **kwargs)
         self.structure: Dict[str, Any] = structure
+
+    @property
+    def lc_kwargs(self) -> Dict[str, Any]:
+        """
+        :return: the keyword arguments for serialization.
+        """
+        return {
+            "content": self.content,
+            "structure": self.structure,
+        }

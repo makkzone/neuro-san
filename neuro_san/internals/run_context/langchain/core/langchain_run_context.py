@@ -12,13 +12,11 @@
 from typing import Any
 from typing import Dict
 from typing import List
-from typing import Set
 from typing import Tuple
 from typing import Type
 from typing import Union
 
 import json
-import traceback
 import uuid
 
 from copy import copy
@@ -28,45 +26,32 @@ from logging import getLogger
 from pydantic_core import ValidationError
 
 from langchain.agents.factory import create_agent
-from langchain_classic.callbacks.tracers.logging import LoggingCallbackHandler
-from langchain_core.agents import AgentFinish
-from langchain_core.callbacks.base import BaseCallbackHandler
 from langchain_core.language_models.base import BaseLanguageModel
-from langchain_core.messages.ai import AIMessage
 from langchain_core.messages.base import BaseMessage
 from langchain_core.messages.human import HumanMessage
 from langchain_core.messages.system import SystemMessage
 from langchain_core.prompts.chat import ChatPromptTemplate
 from langchain_core.runnables.base import Runnable
+from langchain_core.runnables.passthrough import RunnablePassthrough
 from langchain_core.tools.base import BaseTool
 
 from leaf_common.config.resolver_util import ResolverUtil
 
 from neuro_san.internals.errors.error_detector import ErrorDetector
-from neuro_san.internals.interfaces.async_agent_session_factory import AsyncAgentSessionFactory
-from neuro_san.internals.interfaces.context_type_toolbox_factory import ContextTypeToolboxFactory
 from neuro_san.internals.interfaces.context_type_llm_factory import ContextTypeLlmFactory
 from neuro_san.internals.interfaces.invocation_context import InvocationContext
 from neuro_san.internals.journals.journal import Journal
+from neuro_san.internals.journals.intercepting_journal import InterceptingJournal
 from neuro_san.internals.journals.originating_journal import OriginatingJournal
 from neuro_san.internals.messages.origination import Origination
-from neuro_san.internals.messages.agent_message import AgentMessage
 from neuro_san.internals.messages.agent_tool_result_message import AgentToolResultMessage
 from neuro_san.internals.messages.base_message_dictionary_converter import BaseMessageDictionaryConverter
-from neuro_san.internals.run_context.interfaces.agent_network_inspector import AgentNetworkInspector
 from neuro_san.internals.run_context.interfaces.run import Run
 from neuro_san.internals.run_context.interfaces.run_context import RunContext
 from neuro_san.internals.run_context.interfaces.tool_caller import ToolCaller
-from neuro_san.internals.run_context.langchain.core.langchain_openai_function_tool \
-    import LangChainOpenAIFunctionTool
+from neuro_san.internals.run_context.langchain.core.base_tool_factory import BaseToolFactory
 from neuro_san.internals.run_context.langchain.core.langchain_run import LangChainRun
-from neuro_san.internals.run_context.langchain.journaling.journaling_callback_handler import JournalingCallbackHandler
-from neuro_san.internals.run_context.langchain.journaling.journaling_passthrough import JournalingPassthrough
-from neuro_san.internals.run_context.langchain.mcp.langchain_mcp_adapter import LangChainMcpAdapter
-from neuro_san.internals.run_context.langchain.token_counting.langchain_token_counter import LangChainTokenCounter
-from neuro_san.internals.run_context.langchain.util.api_key_error_check import ApiKeyErrorCheck
-from neuro_san.internals.run_context.utils.external_agent_parsing import ExternalAgentParsing
-from neuro_san.internals.run_context.utils.external_tool_adapter import ExternalToolAdapter
+from neuro_san.internals.run_context.langchain.core.neuro_san_runnable import NeuroSanRunnable
 from neuro_san.internals.run_context.langchain.llms.langchain_llm_resources import LangChainLlmResources
 
 
@@ -80,7 +65,7 @@ API_ERROR_TYPES: Tuple[Type[Any], ...] = ResolverUtil.create_type_tuple([
                                          ])
 
 
-# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-instance-attributes,too-many-public-methods
 class LangChainRunContext(RunContext):
     """
     LangChain implementation on RunContext interface supporting high-level LLM usage
@@ -109,7 +94,7 @@ class LangChainRunContext(RunContext):
         """
         self.chat_history: List[BaseMessage] = []
         self.journal: Journal = None
-        self.passthrough: JournalingPassthrough = None
+        self.interceptor: InterceptingJournal = None
         self.llm_resources: LangChainLlmResources = None
         self.agent_chain: Runnable = None
 
@@ -191,15 +176,16 @@ class LangChainRunContext(RunContext):
                                             agent_error_fragments=agent_spec.get("error_fragments"))
 
         if tool_names is not None:
+            factory = BaseToolFactory(self.tool_caller, self.invocation_context, self.journal)
             for tool_name in tool_names:
-                tool: Union[BaseTool | List[BaseTool]] = await self._create_base_tool(tool_name)
+                tool: Union[BaseTool | List[BaseTool]] = await factory.create_base_tool(tool_name)
                 if tool is not None:
                     if isinstance(tool, List):
                         self.tools.extend(tool)
                     else:
                         self.tools.append(tool)
 
-        prompt_template: ChatPromptTemplate = await self._create_prompt_template(instructions)
+        prompt_template: ChatPromptTemplate = await self.create_prompt_template(instructions)
 
         self.agent_chain = self.create_agent_with_fallbacks(prompt_template)
         self.resources_created = True
@@ -272,221 +258,11 @@ class LangChainRunContext(RunContext):
         # By skipping this step, our agent functions as a pure LLM-driven system with a defined role,
         # without tool invocation logic influencing its decision-making.
 
-        agent = prompt_template | meat | self.passthrough
+        agent = prompt_template | meat
 
         return agent
 
-    async def _create_base_tool(self, name: str) -> Union[BaseTool, List[BaseTool]]:
-        """
-        Create base tools for the agent to call.
-        :param name: The name of the tool to create
-        :return: The BaseTools associated with the name
-        """
-
-        inspector: AgentNetworkInspector = self.tool_caller.get_inspector()
-
-        # Check our own local inspector. Most tools live in the neighborhood.
-        agent_spec: Dict[str, Any] = inspector.get_agent_tool_spec(name)
-
-        if agent_spec is None:
-            return await self._create_external_tool(name)
-
-        return await self._create_internal_tool(name, agent_spec)
-
-    async def _create_external_tool(self, name: Union[str, Dict[str, Any]]) -> Union[BaseTool, List[BaseTool]]:
-        """
-        Create external agent/tool.
-        :param name: The name of the external agent/tool
-        :return: External agent as base tools
-        """
-
-        if not isinstance(name, (dict, str)):
-            raise TypeError(f"Tools must be string or dict, got {type(name)}")
-
-        # Handle MCP-based tool as external tool
-        if ExternalAgentParsing.is_mcp_tool(name):
-            return await self._create_mcp_tool(name)
-
-        # See if the agent name given could reference an external agent.
-        if not ExternalAgentParsing.is_external_agent(name):
-            return None
-
-        # Use the ExternalToolAdapter to get the function specification
-        # from the service call to the external agent.
-        # We should be able to use the same BaseTool for langchain integration
-        # purposes as we do for any other tool, though.
-        # Optimization:
-        #   It's possible we might want to cache these results somehow to minimize
-        #   network calls.
-        session_factory: AsyncAgentSessionFactory = self.invocation_context.get_async_session_factory()
-        adapter = ExternalToolAdapter(session_factory, name)
-        try:
-            function_json: Dict[str, Any] = await adapter.get_function_json(self.invocation_context)
-            return self._create_function_tool(function_json, name)
-        except ValueError as exception:
-            # Could not reach the server for the external agent, so tell about it
-            message: str = f"Agent/tool {name} was unreachable. Not including it as a tool.\n"
-            message += str(exception)
-            agent_message = AgentMessage(content=message)
-            await self.journal.write_message(agent_message)
-            self.logger.info(message)
-            return None
-
-    async def _create_internal_tool(self, name: str, agent_spec: Dict[str, Any]) -> BaseTool:
-        """
-        Create internal agent/tool.
-        :param name: The name of the agent or coded tool
-        :return: Agent as base tools
-        """
-
-        toolbox: str = agent_spec.get("toolbox")
-
-        # Handle toolbox-based tools
-        if toolbox:
-            return await self._create_toolbox_tool(toolbox, agent_spec, name)
-
-        # Handle coded tools
-        function_json: Dict[str, Any] = agent_spec.get("function")
-        if function_json is None:
-            return None
-
-        return self._create_function_tool(function_json, name)
-
-    async def _create_mcp_tool(self, mcp_info: Union[str, Dict[str, Any]]) -> List[BaseTool]:
-        """
-        Create MCP tools from the provided MCP configuration.
-
-        The configuration can be one of:
-        - **String**: A URL to an MCP server.
-        Valid values start with "https://mcp" or end with "/mcp" or "/mcp/".
-        - **Dictionary**:
-            - "server" (str): MCP server URL.
-            - "tools" (List[str], optional): List of tool names to allow from the server.
-
-        :param mcp_info: MCP server URL (string) or a configuration dictionary
-        :return: A list of MCP tools as base tools
-        """
-        # By default, assume no allowed tools. This may get updated below or in the LangChainMcpAdadter.
-        allowed_tools: List[str] = None
-        if isinstance(mcp_info, str):
-            server_url: str = mcp_info
-        else:
-            server_url = mcp_info.get("url")
-            allowed_tools = mcp_info.get("tools")
-
-        try:
-            mcp_adapter = LangChainMcpAdapter()
-            mcp_tools: List[BaseTool] = await mcp_adapter.get_mcp_tools(server_url, allowed_tools)
-
-        # MCP errors are nested exceptions.
-        except ExceptionGroup as nested_exception:
-            # Could not reach the MCP server
-            message: str = f"The URL {server_url} was unreachable. Not including it as a tool.\n"
-            message += self.get_exception_details(nested_exception)
-            agent_message = AgentMessage(content=message)
-            await self.journal.write_message(agent_message)
-            self.logger.info(message)
-            return None
-
-        # The allowed tools list might have been updated by the MCP adapter
-        allowed_tools: List[str] = mcp_adapter.client_allowed_tools
-        tool_names: List[str] = [tool.name for tool in mcp_tools]
-        invalid_names: Set[str] = set(allowed_tools) - set(tool_names)
-        # Check if there are invalid tool names in the list.
-        if invalid_names:
-            message = f"The following tools cannot be found in {server_url}: {invalid_names}"
-            agent_message = AgentMessage(content=message)
-            await self.journal.write_message(agent_message)
-            self.logger.info(message)
-
-        return mcp_tools
-
-    def get_exception_details(self, exception, indent=0) -> str:
-        """
-        Recursively extract detailed information from nested exceptions.
-
-        This function handles both regular exceptions and ExceptionGroup instances
-        (introduced in Python 3.11) which can contain multiple nested exceptions.
-        It creates a human-readable, hierarchical representation of all exceptions
-        in the error chain.
-
-        :param exception: The exception to analyze. Can be any Exception type,
-                            including ExceptionGroup instances that contain multiple
-                            nested exceptions.
-        :parm indent: The current indentation level for formatting.
-                                Each recursive call increases this by 1 to create
-                                a visual hierarchy. Defaults to 0.
-
-        :return: A formatted string containing the exception type, message, and
-                any nested sub-exceptions with proper indentation to show the
-                hierarchy. Each line ends with a newline character.
-
-        Note:
-            This function is particularly useful for debugging MCP (Model Context Protocol)
-            errors and other complex exception scenarios where multiple errors can occur
-            simultaneously and get wrapped in ExceptionGroup containers.
-        """
-
-        # Create indentation string based on current nesting level
-        # Each level adds 2 spaces for visual hierarchy
-        spaces: str = "  " * indent
-
-        # Start building the message with exception type and description
-        # Format: "ExceptionType: exception message"
-        message: str = f"{spaces}{type(exception).__name__}: {exception}\n"
-
-        # Check if this exception is an ExceptionGroup (Python 3.11+ feature)
-        # ExceptionGroup can contain multiple exceptions that occurred simultaneously
-        if isinstance(exception, ExceptionGroup):
-            # Iterate through each sub-exception in the group
-            for i, sub_exc in enumerate(exception.exceptions):
-                # Add a header for each sub-exception with 1-based numbering
-                message += f"{spaces}Sub-exception {i+1}:\n"
-
-                # Recursively process the sub-exception with increased indentation
-                # This handles cases where sub-exceptions might themselves be ExceptionGroups
-                message += self.get_exception_details(sub_exc, indent + 1)
-
-        return message
-
-    async def _create_toolbox_tool(self, toolbox: str, agent_spec: Dict[str, Any], name: str) -> BaseTool:
-        """Create tool from toolbox"""
-
-        toolbox_factory: ContextTypeToolboxFactory = self.invocation_context.get_toolbox_factory()
-        try:
-            tool_from_toolbox = toolbox_factory.create_tool_from_toolbox(toolbox, agent_spec.get("args"), name)
-            # If the tool from toolbox is base tool or list of base tool, return the tool as is
-            # since tool's definition and args schema are predefined in these the class of the tool.
-            if isinstance(tool_from_toolbox, BaseTool) or (
-                isinstance(tool_from_toolbox, list) and
-                all(isinstance(tool, BaseTool) for tool in tool_from_toolbox)
-            ):
-                return tool_from_toolbox
-
-            # Otherwise, it is a shared coded tool.
-            return self._create_function_tool(tool_from_toolbox, name)
-
-        except ValueError as tool_creation_exception:
-            # There are errors in tool creation process
-            message: str = f"Failed to create Agent/tool '{name}': {tool_creation_exception}"
-            agent_message = AgentMessage(content=message)
-            await self.journal.write_message(agent_message)
-            self.logger.info(message)
-            return None
-
-    def _create_function_tool(self, function_json: Dict[str, Any], name: str) -> BaseTool:
-        """Create a function tool from JSON specification"""
-
-        # In the case of external agents, if they report a name at all, they will
-        # report something different that does not identify them as external.
-        # Also, most internal agents do not have a name identifier on their functional
-        # JSON, which is required.  Use the agent name we are using for look-up for that
-        # regardless of intent.
-        function_json["name"] = name
-
-        return LangChainOpenAIFunctionTool.from_function_json(function_json, self.tool_caller)
-
-    async def _create_prompt_template(self, instructions: str) -> ChatPromptTemplate:
+    async def create_prompt_template(self, instructions: str) -> ChatPromptTemplate:
         """
         Creates a ChatPromptTemplate given the generic instructions
         """
@@ -534,7 +310,6 @@ class LangChainRunContext(RunContext):
         run = LangChainRun(self.run_id_base, self.chat_history)
         return run
 
-    # pylint: disable=too-many-locals
     async def wait_on_run(self, run: Run, journal: Journal = None) -> Run:
         """
         Loops on the given run's status for model invokation.
@@ -545,22 +320,7 @@ class LangChainRunContext(RunContext):
         :param journal: The Journal which captures the "thinking" messages.
         :return: An potentially updated run
         """
-
-        # Create an agent executor and invoke it with the most recent human message
-        # as input.
-        agent_spec: Dict[str, Any] = self.tool_caller.get_agent_tool_spec()
-
-        verbose: Union[bool, str] = agent_spec.get("verbose", False)
-        if isinstance(verbose, str):
-            verbose = bool(verbose.lower() in ("true", "extra", "logging"))
-
-        max_execution_seconds: float = agent_spec.get("max_execution_seconds", 2.0 * MINUTES)
-
-        # Per advice from https://python.langchain.com/docs/how_to/migrate_agent/#max_iterations
-        max_iterations: int = agent_spec.get("max_iterations", 20)
-        recursion_limit: int = max_iterations * 2 + 1
-
-        run: Run = LangChainRun(self.run_id_base, self.chat_history)
+        _ = run, journal
 
         # Chat history is updated in write_message() below, so to save on
         # some tokens, make a shallow copy of it here as we send it to the LLM
@@ -571,171 +331,27 @@ class LangChainRunContext(RunContext):
             "input": self.recent_human_message.content
         }
 
-        # Create the list of callbacks to pass when invoking
-        parent_origin: List[Dict[str, Any]] = self.get_origin()
-        base_journal: Journal = self.invocation_context.get_journal()
-        origination: Origination = self.invocation_context.get_origination()
-        callbacks: List[BaseCallbackHandler] = [
-            JournalingCallbackHandler(self.journal, base_journal, parent_origin, origination)
-        ]
-        # Consult the agent spec for level of verbosity as it pertains to callbacks.
-        agent_spec: Dict[str, Any] = self.tool_caller.get_agent_tool_spec()
-        verbose: Union[bool, str] = agent_spec.get("verbose", False)
-        if isinstance(verbose, str) and verbose.lower() in ("extra", "logging"):
-            # This particular class adds a *lot* of very detailed messages
-            # to the logs.  Add this because some people are interested in it.
-            callbacks.append(LoggingCallbackHandler(self.logger))
+        run: Run = LangChainRun(self.run_id_base, self.chat_history)
+        session_id: str = run.get_id()
 
-        # Set up a run name for tracing purposes
-        metadata: Dict[str, Any] = self.invocation_context.get_metadata()
-        run_name: str = metadata.get("request_id", "<unknown>") + "-" + \
-            Origination.get_full_name_from_origin(self.origin)
+        runnable = NeuroSanRunnable(agent_chain=self.agent_chain,
+                                    primary_llm=self.llm_resources.get_model(),
+                                    invocation_context=self.invocation_context,
+                                    journal=self.journal,
+                                    interceptor=self.interceptor,
+                                    origin=self.origin,
+                                    tool_caller=self.tool_caller,
+                                    error_detector=self.error_detector,
+                                    session_id=session_id)
+        runnable_config: Dict[str, Any] = runnable.prepare_runnable_config(session_id=session_id, use_run_name=True)
 
-        # Add callbacks as an invoke config
-        invoke_config = {
-            "configurable": {
-                "session_id": run.get_id()
-            },
-            "callbacks": callbacks,
-            "recursion_limit": recursion_limit,
-            "run_name": run_name
-        }
+        # This needs to be run as a chain otherwise LangSmith will pick up two
+        # trace names for the same request.
+        chain: Runnable = RunnablePassthrough() | runnable
 
-        # Chat history is updated in write_message
-        await self.journal.write_message(self.recent_human_message)
-
-        # Attempt to count tokens/costs while invoking the agent.
-        llm: BaseLanguageModel = self.llm_resources.get_model()
-        token_counter = LangChainTokenCounter(llm, self.invocation_context, self.journal, self.origin)
-        await token_counter.count_tokens(self.ainvoke(inputs, invoke_config), max_execution_seconds)
+        await chain.ainvoke(input=inputs, config=runnable_config)
 
         return run
-
-    async def ainvoke(self, inputs: Dict[str, Any], invoke_config: Dict[str, Any]):
-        """
-        Set the agent in motion
-
-        :param inputs: The inputs to the agent_executor
-        :param invoke_config: The invoke_config to send to the agent_executor
-        """
-        chain_result: Union[Dict[str, Any], AgentFinish, AIMessage] = None
-        retries: int = 3
-        exception: Exception = None
-        backtrace: str = None
-        while chain_result is None and retries > 0:
-            try:
-                chain_result: Dict[str, Any] = await self.agent_chain.ainvoke(input=inputs, config=invoke_config)
-            except API_ERROR_TYPES as api_error:
-                backtrace = traceback.format_exc()
-                message: str = None
-                if not ApiKeyErrorCheck.check_for_internal_error(backtrace):
-                    # Does not look like internal LLM stack error:
-                    message = ApiKeyErrorCheck.check_for_api_key_exception(api_error)
-                if message is not None:
-                    raise ValueError(message) from api_error
-                # Continue with regular retry logic:
-                self.logger.warning("retrying from %s", api_error.__class__.__name__)
-                retries = retries - 1
-                exception = api_error
-            except KeyError as key_error:
-                self.logger.warning("retrying from KeyError")
-                retries = retries - 1
-                exception = key_error
-                backtrace = traceback.format_exc()
-            except ValueError as value_error:
-                response = str(value_error)
-                find_string = "An output parsing error occurred. " + \
-                              "In order to pass this error back to the agent and have it try again, " + \
-                              "pass `handle_parsing_errors=True` to the AgentExecutor. " + \
-                              "This is the error: Could not parse LLM output: `"
-                if response.startswith(find_string):
-                    # Agent is returning good stuff, but langchain is erroring out over it.
-                    # From: https://github.com/langchain-ai/langchain/issues/1358#issuecomment-1486132587
-                    # Per thread consensus, this is hacky and there are better ways to go,
-                    # but removes immediate impediments.
-                    chain_result = {
-                        "output": response.removeprefix(find_string).removesuffix("`")
-                    }
-                else:
-                    self.logger.warning("retrying from ValueError")
-                    retries = retries - 1
-                    exception = value_error
-                    backtrace = traceback.format_exc()
-
-        output: str = self.parse_chain_result(chain_result, exception, backtrace)
-        return_message: BaseMessage = AIMessage(output)
-
-        # Chat history is updated in write_message
-        await self.journal.write_message(return_message)
-
-    def parse_chain_result(self, chain_result: Union[Dict[str, Any], AgentFinish, AIMessage],
-                           exception: Exception, backtrace: str) -> str:
-        """
-        Parse the result from the langchain chain.
-
-        :param chain_result: The result from invoking the agent chain.
-                        Can be:
-                        * An AgentFinish instance whose return_values can be any one of the following
-                        * A dictionary whose keys might be:
-                            "output" - the actual output to use
-                            "messages" - effectively a chat history
-                        * An AIMessage whose content is the output to use
-        :param exception: Any exception that happened along the way
-        :param backtrace: Any backtrace to the exception that happened along the way
-        :return: A string value to return as the result of the run.
-        """
-
-        # Initialize our output.
-        # The value here might morph a bit between types, but when we return
-        # something we expect it to be a string.
-        output: Union[str, List[Dict[str, Any]]] = None
-
-        if chain_result is None and exception is not None:
-            # We got an exception instead of a proper result. Say so.
-            output = f"Agent stopped due to exception {exception}"
-        else:
-            # Set some stuff up for later
-            backtrace = None
-            ai_message: AIMessage = None
-
-            # Handle the AgentFinish case.
-            # The return_values from there contain our output whether in string or dict form.
-            # ??? From what path does this come?
-            if isinstance(chain_result, AgentFinish):
-                chain_result = chain_result.return_values
-
-            if isinstance(chain_result, Dict):
-                # Normal return value from a chain is a dict.
-                # The dict in question usually has chat history in a messages field.
-                # We want the last AIMessage from that chat history.
-                messages: List[BaseMessage] = chain_result.get("messages", [])
-                for message in reversed(messages):
-                    if isinstance(message, AIMessage):
-                        ai_message = message
-                        break
-
-                if ai_message is None:
-                    # We didn't find an AIMessage, so look for straight-up output key
-                    output = chain_result.get("output")
-
-            elif isinstance(chain_result, AIMessage):
-                # Sometimes we get an AIMessage from a tool call.
-                ai_message = chain_result
-
-            if ai_message is not None:
-                # We generally want the content of any single AIMessage we found from above
-                output = ai_message.content
-
-        # In general, output is a string. but output from Anthropic can either be
-        # a single string or a list of content blocks.
-        # If it is a list, "text" is a key of a dictionary which is the first element of
-        # the list. For more details: https://python.langchain.com/docs/integrations/chat/anthropic/#content-blocks
-        if isinstance(output, list):
-            output = output[0].get("text", "")
-
-        # See if we had some kind of error and format accordingly, if asked for.
-        output = self.error_detector.handle_error(output, backtrace)
-        return output
 
     async def get_response(self) -> List[BaseMessage]:
         """
@@ -875,7 +491,7 @@ class LangChainRunContext(RunContext):
         self.recent_human_message = None
         self.llm_resources = None
         self.journal = None
-        self.passthrough = None
+        self.interceptor = None
 
     def get_agent_tool_spec(self) -> Dict[str, Any]:
         """
@@ -921,8 +537,8 @@ class LangChainRunContext(RunContext):
 
         # Make a nested chain where each journal is wrapped by the next
         base_journal: Journal = self.invocation_context.get_journal()
-        self.passthrough = JournalingPassthrough(wrapped_journal=base_journal, origin=self.origin)
-        self.journal = OriginatingJournal(self.passthrough, self.origin, self.chat_history)
+        self.interceptor = InterceptingJournal(wrapped_journal=base_journal, origin=self.origin)
+        self.journal = OriginatingJournal(self.interceptor, self.origin, self.chat_history)
 
     def update_from_chat_context(self, chat_context: Dict[str, Any]):
         """
