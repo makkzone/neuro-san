@@ -74,6 +74,7 @@ class UrlNetworkValidator(AbstractNetworkValidator):
         :param errors: List of errors. Potentially modified on exit.
         """
         for tool in safe_tools:
+            # pylint: disable=too-many-boolean-expressions
             if self.is_url_or_path(tool) and \
                     tool not in urls and \
                     not tool.startswith("http://") and \
