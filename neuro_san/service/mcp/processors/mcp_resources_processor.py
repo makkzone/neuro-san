@@ -22,6 +22,8 @@ from neuro_san.service.mcp.util.requests_util import RequestsUtil
 class McpResourcesProcessor:
     """
     Class implementing "resources"-related MCP requests.
+    Overall MCP documentation can be found here:
+    https://modelcontextprotocol.io/specification/2025-06-18/server/resources
     """
 
     def __init__(self, logger: HttpLogger):

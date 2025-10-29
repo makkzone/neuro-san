@@ -30,6 +30,8 @@ from neuro_san.service.http.logging.http_logger import HttpLogger
 class McpToolsProcessor:
     """
     Class implementing "tools"-related MCP requests.
+    Overall MCP documentation can be found here:
+    https://modelcontextprotocol.io/specification/2025-06-18/server/tools
     """
 
     def __init__(self,

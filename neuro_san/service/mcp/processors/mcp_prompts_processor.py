@@ -22,6 +22,7 @@ from neuro_san.service.mcp.util.requests_util import RequestsUtil
 class McpPromptsProcessor:
     """
     Class implementing "prompts"-related MCP requests.
+    https://modelcontextprotocol.io/specification/2025-06-18/server/prompts
     """
 
     def __init__(self, logger: HttpLogger):

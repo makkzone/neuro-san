@@ -22,6 +22,8 @@ from neuro_san.service.mcp.util.requests_util import RequestsUtil
 class McpPingProcessor:
     """
     Class implementing MCP protocol pings.
+    Overall MCP documentation can be found here:
+    https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/ping#ping
     """
 
     def __init__(self, logger: HttpLogger):

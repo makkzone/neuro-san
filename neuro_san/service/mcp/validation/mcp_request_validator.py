@@ -34,7 +34,6 @@ class McpRequestValidator(DictionaryValidator):
         :param candidate: The request dictionary to validate
         :return: A list of error messages, if any
         """
-        print(f"Validating MCP request: {candidate}")
         try:
             jsonschema.validate(instance=candidate, schema=self.validation_schema)
         except jsonschema.exceptions.ValidationError:

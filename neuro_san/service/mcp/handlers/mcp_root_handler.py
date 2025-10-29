@@ -78,9 +78,6 @@ class McpRootHandler(BaseRequestHandler):
         metadata: Dict[str, Any] = self.get_metadata()
         request_id = "unknown"
 
-        print(f"R>>> {self.request}")
-        print(f"R>>> {self.request.body}")
-
         try:
             # Parse JSON body
             data = json.loads(self.request.body)
@@ -117,7 +114,10 @@ class McpRootHandler(BaseRequestHandler):
         if protocol_version:
             protocol_version = protocol_version.strip()
 
-        # First check if we have handshake/initialize session requests:
+        # First check if we have handshake/initialize session requests -
+        # these do not require valid protocol version or valid session:
+        # MCP connection/session lifecycle is defined here:
+        # https://modelcontextprotocol.io/specification/2025-06-18/basic/lifecycle
         new_session_id, request_done = await self.handle_handshake(method, data, session_id, request_id, metadata)
         if request_done:
             if new_session_id:
@@ -265,13 +265,8 @@ class McpRootHandler(BaseRequestHandler):
         metadata: Dict[str, Any] = self.get_metadata()
         request_id = "unknown"
 
-        print(f"D>>> {self.request}")
-        print(f"D>>> {self.request.body}")
-
         # We only expect MCP client session id taken from request headers:
         session_id: str = self.request.headers.get(MCP_SESSION_ID, None)
-        if session_id is not None:
-            print(f"D>>> session: {session_id}")
 
         request_status: int = HTTPStatus.NO_CONTENT
         if session_id is not None:
