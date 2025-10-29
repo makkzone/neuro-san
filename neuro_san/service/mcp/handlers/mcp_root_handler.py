@@ -185,10 +185,13 @@ class McpRootHandler(BaseRequestHandler):
                 self.logger.error(self.get_metadata(), f"error: Method {method} not found")
         except Exception as exc:  # pylint: disable=broad-exception-caught
             error_msg: Dict[str, Any] =\
-                McpErrorsUtil.get_protocol_error(request_id, McpError.ServerError, str(exc))
+                McpErrorsUtil.get_protocol_error(
+                    request_id,
+                    McpError.ServerError,
+                    f"exception during {method} handling")
             self.set_status(HTTPStatus.INTERNAL_SERVER_ERROR)
             self.write(error_msg)
-            self.logger.error(self.get_metadata(), "error: Server error")
+            self.logger.error(self.get_metadata(), "error: Server error %s: %s", method, str(exc))
         finally:
             # We are done with response stream:
             self.do_finish()
@@ -247,10 +250,10 @@ class McpRootHandler(BaseRequestHandler):
                 McpErrorsUtil.get_protocol_error(
                     request_id,
                     McpError.ServerError,
-                    "exception during request handling")
+                    f"exception during {method} handling")
             self.set_status(HTTPStatus.INTERNAL_SERVER_ERROR)
             self.write(error_msg)
-            self.logger.error(self.get_metadata(), "error: Server error: %s", str(exc))
+            self.logger.error(self.get_metadata(), "error: Server error %s: %s", method, str(exc))
             return None, True
         return None, False
 

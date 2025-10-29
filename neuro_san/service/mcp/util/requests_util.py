@@ -21,15 +21,15 @@ class RequestsUtil:
     """
 
     @staticmethod
-    def safe_request_id(request_id: Union[int, str]) -> Union[int, str]:
+    def safe_request_id(request_id: Union[int, str]) -> str:
         """
         Return HTML-safe representation of user request id to be sent back in MCP response.
         :param request_id: MCP request id (as received from user);
-        :return: HTML-escaped request id
+        :return: HTML-escaped request id string
         """
-        if isinstance(request_id, str):
-            return html.escape(request_id)
-        return request_id
+        if isinstance(request_id, (str, int)):
+            return html.escape(str(request_id))
+        return "invalid"
 
     @staticmethod
     def safe_message(msg: str) -> str:
