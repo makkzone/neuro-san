@@ -136,6 +136,9 @@ class ServerMainLoop:
                                                            DEFAULT_HTTP_SERVER_MONITOR_INTERVAL_SECONDS)),
                                 help="Http server resources monitoring/logging interval in seconds "
                                      "0 means no logging")
+        arg_parser.add_argument("--mcp_enable", type=str,
+                                default=os.environ.get("AGENT_MCP_ENABLE", "false"),
+                                help="'true' if MCP protocol service should be enabled")
         return arg_parser
 
     def parse_args(self):
@@ -178,6 +181,9 @@ class ServerMainLoop:
             # We don't need the queues in this situation either.
             # This is a signal to other code to not even bother with Reservationists
             self.server_context.no_queues()
+        # Do we to enable MCP service?
+        if args.mcp_enable.lower() != "true":
+            server_status.mcp_service.set_requested(False)
 
         self.http_server_config.http_connections_backlog = args.http_connections_backlog
         self.http_server_config.http_idle_connection_timeout_seconds = args.http_idle_connections_timeout
@@ -223,6 +229,11 @@ class ServerMainLoop:
 
         server_status: ServerStatus = self.server_context.get_server_status()
 
+        # Fast out if no http service is requested:
+        if not server_status.http_service.is_requested():
+            print("HTTP server is not requested - exiting.")
+            return
+
         if server_status.updater.is_requested():
             current_dir: str = os.path.dirname(os.path.abspath(__file__))
             setup_logging(server_status.updater.get_service_name(),
@@ -232,10 +243,6 @@ class ServerMainLoop:
             watcher = StorageWatcher(self.watcher_config, self.server_context)
             watcher.start()
 
-        if not server_status.http_service.is_requested():
-            print("HTTP server is not requested - exiting.")
-            return
-
         # Create HTTP server;
         self.http_server = HttpServer(
             self.server_context,
@@ -243,6 +250,10 @@ class ServerMainLoop:
             self.service_openapi_spec_file,
             self.request_limit,
             forwarded_request_metadata=metadata_str)
+
+        # Enable MCP service if requested:
+        if server_status.mcp_service.is_requested():
+            self.server_context.get_mcp_server_context().set_enabled(True)
 
         # Now - our http server is created and listens to updates of network_storage
         # Perform the initial setup
@@ -252,7 +263,7 @@ class ServerMainLoop:
             storage.setup_agent_networks(self.agent_networks.get(storage_type))
 
         # Start http server:
-        self.http_server()
+        self.http_server.start()
 
 
 if __name__ == '__main__':

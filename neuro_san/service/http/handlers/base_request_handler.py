@@ -43,11 +43,7 @@ class BaseRequestHandler(RequestHandler):
     # pylint: disable=attribute-defined-outside-init
     # pylint: disable=too-many-arguments
     # pylint: disable=too-many-positional-arguments
-    def initialize(self,
-                   agent_policy: AgentAuthorizer,
-                   forwarded_request_metadata: List[str],
-                   openapi_service_spec_path: str,
-                   network_storage_dict: Dict[str, AgentNetworkStorage]):
+    def initialize(self, **kwargs):
         """
         This method is called by Tornado framework to allow
         injecting service-specific data into local handler context.
@@ -58,12 +54,17 @@ class BaseRequestHandler(RequestHandler):
                     AgentNetworkStorage instance which keeps all the AgentNetwork instances
                     of a particular grouping.
         """
+        # Set up local members from kwargs dictionary passed in:
+        # type: AgentAuthorizer
+        self.agent_policy: AgentAuthorizer = kwargs.pop("agent_policy", None)
+        # type: List[str]
+        self.forwarded_request_metadata: List[str] = kwargs.pop("forwarded_request_metadata", [])
+        # type: str
+        self.openapi_service_spec_path: str = kwargs.pop("openapi_service_spec_path", None)
+        # type: Dict[str, AgentNetworkStorage]
+        self.network_storage_dict: Dict[str, AgentNetworkStorage] = kwargs.pop("network_storage_dict", {})
 
-        self.agent_policy = agent_policy
-        self.forwarded_request_metadata: List[str] = forwarded_request_metadata
-        self.openapi_service_spec_path: str = openapi_service_spec_path
-        self.logger = HttpLogger(forwarded_request_metadata)
-        self.network_storage_dict: Dict[str, AgentNetworkStorage] = network_storage_dict
+        self.logger = HttpLogger(self.forwarded_request_metadata)
         self.show_absent: bool = os.environ.get("SHOW_ABSENT_METADATA") is not None
         self.request_id: int = 0
 
@@ -71,7 +72,7 @@ class BaseRequestHandler(RequestHandler):
             self.set_header("Access-Control-Allow-Origin", "*")
             self.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
             headers: str = "Content-Type, Transfer-Encoding"
-            metadata_headers: str = ", ".join(forwarded_request_metadata)
+            metadata_headers: str = ", ".join(self.forwarded_request_metadata)
             if len(metadata_headers) > 0:
                 headers += f", {metadata_headers}"
             # Set all allowed headers:

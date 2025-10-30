@@ -20,6 +20,7 @@ from neuro_san.internals.chat.async_collating_queue import AsyncCollatingQueue
 from neuro_san.internals.network_providers.agent_network_storage import AgentNetworkStorage
 from neuro_san.internals.network_providers.expiring_agent_network_storage import ExpiringAgentNetworkStorage
 from neuro_san.service.utils.server_status import ServerStatus
+from neuro_san.service.utils.mcp_server_context import McpServerContext
 
 
 class ServerContext:
@@ -34,6 +35,7 @@ class ServerContext:
         self.server_status: ServerStatus = None
         self.executor_pool = AsyncioExecutorPool(reuse_mode=True)
         self.queues: Queue[AsyncCollatingQueue] = Queue()
+        self.mcp_server_context: McpServerContext = McpServerContext()
 
         # Dictionary is string key (describing scope) to AgentNetworkStorage grouping.
         self.network_storage_dict: Dict[str, AgentNetworkStorage] = {
@@ -78,3 +80,9 @@ class ServerContext:
         that we don't need Reservationists
         """
         self.queues = None
+
+    def get_mcp_server_context(self) -> McpServerContext:
+        """
+        :return: The MCPServerContext for MCP service operations
+        """
+        return self.mcp_server_context

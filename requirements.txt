@@ -57,6 +57,9 @@ psutil>=7.0.0
 # HTTP server part
 tornado>=6.4.2
 
+# For JSON schema validation
+jsonschema>=4.19.0
+
 # Sync/async queue
 janus >= 2.0.0
 
