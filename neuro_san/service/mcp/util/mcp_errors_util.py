@@ -35,14 +35,14 @@ class McpErrorsUtil:
         """
         msg: str = error.str_label
         if extra_msg is not None:
-            msg = f"{msg}: {RequestsUtil.safe_message(extra_msg)}"
+            msg = f"{msg}: {extra_msg}"
         return {
             "jsonrpc": "2.0",
             # Appease code scanning tools by escaping the id field:
             "id": RequestsUtil.safe_request_id(request_id),
             "error": {
                 "code": error.num_value,
-                "message": msg
+                "message": RequestsUtil.safe_message(msg)
             }
         }
 
@@ -62,7 +62,7 @@ class McpErrorsUtil:
                 "content": [
                     {
                         "type": "text",
-                        "text": error_msg
+                        "text": RequestsUtil.safe_message(error_msg)
                     }
                 ],
                 "isError": True
