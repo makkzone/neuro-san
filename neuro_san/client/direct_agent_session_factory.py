@@ -11,6 +11,7 @@
 # END COPYRIGHT
 from typing import Any
 from typing import Dict
+from typing import List
 
 from leaf_common.time.timeout import Timeout
 from leaf_common.asyncio.asyncio_executor_pool import AsyncioExecutorPool
@@ -86,14 +87,17 @@ class DirectAgentSessionFactory:
 
         factory = ExternalAgentSessionFactory(use_direct=use_direct, network_storage_dict=self.network_storage_dict)
         executors_pool = AsyncioExecutorPool()
+        tracing_metadata_keys: List[str] = []
 
         # DEF - We could do max_lifetime here, but waiting until that seems necessary.
         reservationist = DirectAgentReservationist(set([self.network_storage_dict.get("temp")]))
-        invocation_context = SessionInvocationContext(factory,
+        invocation_context = SessionInvocationContext(agent_name,
+                                                      factory,
                                                       executors_pool,
                                                       llm_factory,
                                                       toolbox_factory,
                                                       metadata,
+                                                      tracing_metadata_keys,
                                                       reservationist)
         invocation_context.start()
         session: DirectAgentSession = DirectAgentSession(agent_network=agent_network,

@@ -13,6 +13,7 @@
 from typing import Any
 from typing import Dict
 from typing import Generator
+from typing import List
 
 import json
 import contextlib
@@ -94,6 +95,8 @@ class AsyncAgentService:
         self.llm_factory: ContextTypeLlmFactory = MasterLlmFactory.create_llm_factory(config)
         self.toolbox_factory: ContextTypeToolboxFactory = MasterToolboxFactory.create_toolbox_factory(config)
         self.async_executor_pool: AsyncioExecutorPool = server_context.get_executor_pool()
+        self.tracing_metadata_keys: List[str] = []
+
         # Load once.
         self.llm_factory.load()
         self.toolbox_factory.load()
@@ -228,11 +231,13 @@ class AsyncAgentService:
         # Prepare
         factory = ExternalAgentSessionFactory(use_direct=False)
         invocation_context = SessionInvocationContext(
+            self.agent_name,
             factory,
             self.async_executor_pool,
             self.llm_factory,
             self.toolbox_factory,
             metadata,
+            self.tracing_metadata_keys,
             reservationist)
         invocation_context.start()
 

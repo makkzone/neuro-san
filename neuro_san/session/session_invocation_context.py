@@ -14,6 +14,7 @@ from __future__ import annotations
 from typing import Any
 from typing import Callable
 from typing import Dict
+from typing import List
 
 from copy import copy
 import functools
@@ -43,39 +44,48 @@ class SessionInvocationContext(InvocationContext):
 
     # pylint: disable=too-many-arguments
     # pylint: disable=too-many-positional-arguments
-    def __init__(self, async_session_factory: AsyncAgentSessionFactory,
+    def __init__(self, agent_name: str,
+                 async_session_factory: AsyncAgentSessionFactory,
                  async_executors_pool: AsyncioExecutorPool,
                  llm_factory: ContextTypeLlmFactory,
                  toolbox_factory: ContextTypeToolboxFactory = None,
                  metadata: Dict[str, str] = None,
+                 tracing_metadata_keys: List[str] = None,
                  reservationist: Reservationist = None):
         """
         Constructor
 
+        :param agent_name: The name of the agent
         :param async_session_factory: The AsyncAgentSessionFactory to use
                         when connecting with external agents.
         :param async_executors_pool: pool of AsyncioExecutors to use for obtaining
                          an executor instance to use for this context;
         :param llm_factory: The ContextTypeLlmFactory instance
         :param toolbox_factory: The ContextTypeToolboxFactory instance
-        :param metadata: A grpc metadata of key/value pairs to be inserted into
+        :param metadata: A request metadata of key/value pairs to be inserted into
                          the header. Default is None. Preferred format is a
                          dictionary of string keys to string values.
+        :param tracing_metadata_keys: A list of keys to be used for tracing
         :param reservationist: The Reservationist instance to use.
         """
 
+        # From args
+        self.agent_name: str = agent_name
         self.async_session_factory: AsyncAgentSessionFactory = async_session_factory
         self.async_executors_pool: AsyncioExecutorPool = async_executors_pool
+        self.llm_factory: ContextTypeLlmFactory = llm_factory
+        self.toolbox_factory: ContextTypeToolboxFactory = toolbox_factory
+        self.metadata: Dict[str, str] = metadata
+        self.tracing_metadata_keys: List[str] = tracing_metadata_keys
+        self.reservationist: Reservationist = reservationist
+
+        # Internal
         # Get an async executor to run all tasks for this session instance:
         self.asyncio_executor: AsyncioExecutor = self.async_executors_pool.get_executor()
+        self.request_reporting: Dict[str, Any] = {}
         self.origination: Origination = Origination()
         self.queue: AsyncCollatingQueue = AsyncCollatingQueue()
         self.journal: Journal = MessageJournal(self.queue)
-        self.metadata: Dict[str, str] = metadata
-        self.request_reporting: Dict[str, Any] = {}
-        self.llm_factory: ContextTypeLlmFactory = llm_factory
-        self.toolbox_factory: ContextTypeToolboxFactory = toolbox_factory
-        self.reservationist: Reservationist = reservationist
 
     def start(self):
         """
@@ -164,6 +174,18 @@ class SessionInvocationContext(InvocationContext):
         :return: The Reservationist instance for the session
         """
         return self.reservationist
+
+    def get_agent_name(self) -> str:
+        """
+        :return: The agent name for the session
+        """
+        return self.agent_name
+
+    def get_tracing_metadata_keys(self) -> List[str]:
+        """
+        :return: The tracing metadata keys for the session
+        """
+        return self.tracing_metadata_keys
 
     def reset(self):
         """
