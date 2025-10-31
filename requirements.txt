@@ -6,8 +6,8 @@
 # requirements-build.txt
 
 # In-house dependencies
-leaf-common>=1.2.29
-leaf-server-common>=0.1.21
+leaf-common>=1.2.31
+leaf-server-common>=0.1.22
 
 # These are needed for generating code from .proto files
 grpcio>=1.62.0
