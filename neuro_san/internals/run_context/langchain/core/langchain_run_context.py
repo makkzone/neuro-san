@@ -51,7 +51,7 @@ from neuro_san.internals.run_context.interfaces.run_context import RunContext
 from neuro_san.internals.run_context.interfaces.tool_caller import ToolCaller
 from neuro_san.internals.run_context.langchain.core.base_tool_factory import BaseToolFactory
 from neuro_san.internals.run_context.langchain.core.langchain_run import LangChainRun
-from neuro_san.internals.run_context.langchain.core.neuro_san_runnable import NeuroSanRunnable
+from neuro_san.internals.run_context.langchain.core.run_context_runnable import RunContextRunnable
 from neuro_san.internals.run_context.langchain.llms.langchain_llm_resources import LangChainLlmResources
 
 
@@ -334,15 +334,15 @@ class LangChainRunContext(RunContext):
         run: Run = LangChainRun(self.run_id_base, self.chat_history)
         session_id: str = run.get_id()
 
-        runnable = NeuroSanRunnable(agent_chain=self.agent_chain,
-                                    primary_llm=self.llm_resources.get_model(),
-                                    invocation_context=self.invocation_context,
-                                    journal=self.journal,
-                                    interceptor=self.interceptor,
-                                    origin=self.origin,
-                                    tool_caller=self.tool_caller,
-                                    error_detector=self.error_detector,
-                                    session_id=session_id)
+        runnable = RunContextRunnable(agent_chain=self.agent_chain,
+                                      primary_llm=self.llm_resources.get_model(),
+                                      invocation_context=self.invocation_context,
+                                      journal=self.journal,
+                                      interceptor=self.interceptor,
+                                      origin=self.origin,
+                                      tool_caller=self.tool_caller,
+                                      error_detector=self.error_detector,
+                                      session_id=session_id)
         runnable_config: Dict[str, Any] = runnable.prepare_runnable_config(session_id=session_id, use_run_name=True)
 
         # This needs to be run as a chain otherwise LangSmith will pick up two
