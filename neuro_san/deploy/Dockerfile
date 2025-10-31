@@ -200,6 +200,11 @@ ENV AGENT_USAGE_LOGGER=""
 # AGENT_FORWARDED_REQUEST_METADATA
 ENV AGENT_USAGE_LOGGER_METADATA=""
 
+# A space-delimited list of environment variables to be forwarded to observability tracing metadata.
+# The defaults given here are standard Kubernetes environment variables for any given deployment pod.
+# Only environment variables that are set to something other than the empty string will be forwarded.
+ENV AGENT_TRACING_METADATA_ENV_VARS="POD_NAME POD_NAMESPACE POD_IP NODE_NAME"
+
 # Size of backlog for TCP connections to http server.
 # Sets the maximum number of pending TCP connections waiting to be accepted by the server.
 # Impact:
