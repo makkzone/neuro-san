@@ -36,8 +36,8 @@ from leaf_common.config.resolver_util import ResolverUtil
 from neuro_san.internals.errors.error_detector import ErrorDetector
 from neuro_san.internals.journals.journal import Journal
 from neuro_san.internals.messages.origination import Origination
+from neuro_san.internals.run_context.core.neuro_san_runnable import NeuroSanRunnable
 from neuro_san.internals.run_context.interfaces.tool_caller import ToolCaller
-from neuro_san.internals.run_context.langchain.core.run_context_runnable import RunContextRunnable
 from neuro_san.internals.run_context.langchain.journaling.journaling_callback_handler import JournalingCallbackHandler
 from neuro_san.internals.run_context.langchain.token_counting.langchain_token_counter import LangChainTokenCounter
 from neuro_san.internals.run_context.langchain.util.api_key_error_check import ApiKeyErrorCheck
@@ -52,7 +52,7 @@ API_ERROR_TYPES: Tuple[Type[Any], ...] = ResolverUtil.create_type_tuple([
                                          ])
 
 
-class NeuroSanRunnable(RunContextRunnable):
+class RunContextRunnable(NeuroSanRunnable):
     """
     RunnablePassthrough implementation that intercepts journal messages
     """
