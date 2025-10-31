@@ -225,7 +225,20 @@ class NeuroSanRunnable(RunnablePassthrough):
         if recursion_limit:
             runnable_config["recursion_limit"] = recursion_limit
 
-        # Maybe add metadata to the config
+        # Only add metadata if we have something
+        runnable_metadata: Dict[str, Any] = self.prepare_tracing_metadata(request_metadata)
+        if runnable_metadata:
+            runnable_config["metadata"] = runnable_metadata
+
+        return runnable_config
+
+    def prepare_tracing_metadata(self, request_metadata: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Prepare a dictionary of metadata for tracing purposes.
+
+        :param request_metadata: The metadata to use for the run
+        :return: A dictionary of metadata for run tracing
+        """
         runnable_metadata: Dict[str, Any] = {}
 
         # Add values for listed env vars if they have values.
@@ -244,11 +257,7 @@ class NeuroSanRunnable(RunnablePassthrough):
             if value is not None:
                 runnable_metadata[key] = value
 
-        # Only add metadata if we have something
-        if runnable_metadata:
-            runnable_config["metadata"] = runnable_metadata
-
-        return runnable_config
+        return runnable_metadata
 
     async def invoke_agent_chain(self, inputs: Dict[str, Any], runnable_config: Dict[str, Any]):
         """
