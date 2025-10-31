@@ -52,16 +52,18 @@ class NeuroSanRunnable(RunnablePassthrough, RunTarget):
     # Declarations of member variables here satisfy Pydantic style,
     # which is a type validator that langchain is based on which
     # is able to use JSON schema definitions to validate fields.
-    invocation_context: InvocationContext
+    invocation_context: InvocationContext = None
 
-    interceptor: InterceptingJournal
+    interceptor: InterceptingJournal = None
 
-    origin: List[Dict[str, Any]]
+    origin: List[Dict[str, Any]] = None
 
-    session_id: str
+    session_id: str = None
 
     # Default logger
     logger: Optional[Logger] = None
+
+    run_target: Optional[RunTarget] = None
 
     # This guy needs to be a pydantic class and in order to have
     # any non-pydantic non-serializable members, we need to do this.
@@ -74,7 +76,7 @@ class NeuroSanRunnable(RunnablePassthrough, RunTarget):
         """
         Constructor
         """
-        run_target: RunTarget = kwargs.pop('run_target', self)
+        run_target: RunTarget = kwargs.get("run_target", self)
         super().__init__(afunc=run_target.run_it, **kwargs)
         self.logger: Logger = getLogger(self.__class__.__name__)
 
@@ -102,7 +104,8 @@ class NeuroSanRunnable(RunnablePassthrough, RunTarget):
         Returns:
             The output of the `Runnable`.
         """
-        raise NotImplementedError
+        outputs: Output = await self.ainvoke(inputs)
+        return output
 
     def prepare_runnable_config(self, session_id: str = None,
                                 callbacks: List[BaseCallbackHandler] = None,

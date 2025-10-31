@@ -45,10 +45,10 @@ class MasterTracingContextFactory:
         if context_type.startswith("openai"):
             tracing_context_factory = None
         elif context_type.startswith("langchain"):
-            tracing_context_factory = LangChainTracingContextFactory(config)
+            tracing_context_factory = LangChainTracingContextFactory()
         else:
             # LangChain case
-            tracing_context_factory = LangChainTracingContextFactory(config)
+            tracing_context_factory = LangChainTracingContextFactory()
 
         return tracing_context_factory
 
