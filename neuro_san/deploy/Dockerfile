@@ -205,6 +205,11 @@ ENV AGENT_USAGE_LOGGER=""
 # AGENT_FORWARDED_REQUEST_METADATA
 ENV AGENT_USAGE_LOGGER_METADATA=""
 
+# A space-delimited list of http metadata request keys to forward to tracing/Observability
+# infrastructure. When not set, this defaults to the value provided by
+# AGENT_USAGE_LOGGER_METADATA or AGENT_FORWARDED_REQUEST_METADATA.
+ENV AGENT_TRACING_METADATA_REQUEST_KEYS=""
+
 # A space-delimited list of environment variables to be forwarded to observability tracing metadata.
 # The defaults given here are standard Kubernetes environment variables for any given deployment pod.
 # Only environment variables that are set to something other than the empty string will be forwarded.
