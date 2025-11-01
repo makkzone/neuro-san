@@ -76,8 +76,12 @@ class NeuroSanRunnable(RunnablePassthrough, RunTarget):
         """
         Constructor
         """
+        # Use the run_target from the kwargs as the afunc parameter
+        # for the RunnablePassthrough.  If that doesn't exist, assume
+        # our own run_it() method is overridden and use that.
         run_target: RunTarget = kwargs.get("run_target", self)
         super().__init__(afunc=run_target.run_it, **kwargs)
+
         self.logger: Logger = getLogger(self.__class__.__name__)
 
     # pylint: disable=redefined-builtin
@@ -89,11 +93,13 @@ class NeuroSanRunnable(RunnablePassthrough, RunTarget):
         **kwargs: Any | None,
     ) -> Other:
 
+        # Called by langchain infrastruture when a chain is invoked.
+        # Calling the super here means that run_it() below will be called
+        # as part of the RunnablePassthrough infrastructure.
         _: Other = await super().ainvoke(input, config, **kwargs)
         outputs: Dict[str, Any] = self.get_intercepted_outputs()
         return outputs
 
-    # pylint: disable=redefined-builtin
     async def run_it(self, inputs: Input) -> Output:
         """
         Transform a single input into an output.
@@ -104,8 +110,7 @@ class NeuroSanRunnable(RunnablePassthrough, RunTarget):
         Returns:
             The output of the `Runnable`.
         """
-        outputs: Output = await self.ainvoke(inputs)
-        return outputs
+        raise NotImplementedError
 
     def prepare_runnable_config(self, session_id: str = None,
                                 callbacks: List[BaseCallbackHandler] = None,
