@@ -80,6 +80,9 @@ class DataDrivenChatSession(RunTarget):
 
         self.front_man: FrontMan = None
         self.sly_data: Dict[str, Any] = {}
+
+        # This is the context policy container that pertains to the invocation
+        # of run_it()
         self.invocation_context: InvocationContext = None
         self.interceptor: InterceptingJournal = None
 
@@ -187,25 +190,33 @@ class DataDrivenChatSession(RunTarget):
         :return: Nothing.  Response values are put on a queue whose consumtion is
                 managed by the Iterator aspect of AsyncCollatingQueue on the InvocationContext.
         """
+        # Set up some member variable state so that run_it() can use it
         self.invocation_context = invocation_context
+        journal: Journal = self.invocation_context.get_journal()
+        self.interceptor = InterceptingJournal(journal, origin=None)
+
+        # Set up the input dictionary that will show up in an Observability/tracing app
         inputs: Dict[str, Any] = {
             "user_input": user_input,
             "sly_data": sly_data,
             "chat_context": chat_context
         }
 
-        tracing_factory: ContextTypeTracingContextFactory = \
-            MasterTracingContextFactory.create_tracing_context_factory()
-
-        journal: Journal = self.invocation_context.get_journal()
-        self.interceptor = InterceptingJournal(journal, origin=None)
-
+        # Set up configuration for creating the tracing context.
+        # These are the bare minimum required to get output and metadata correct
+        # in the tracing reporting.
         config: Dict[str, Any] = {
             "interceptor": self.interceptor,
             "invocation_context": self.invocation_context
         }
-        run_target: RunTarget = tracing_factory.create_tracing_context(config, self)
 
+        # Get a toolkit-specific implementation for creating the tracing context
+        tracing_factory: ContextTypeTracingContextFactory = \
+            MasterTracingContextFactory.create_tracing_context_factory()
+        # For the factory args, we are our own run_target.
+        run_target: RunTarget = tracing_factory.create_tracing_context(config, run_target=self)
+
+        # Run the run_target that was given back by the factory.
         await run_target.run_it(inputs)
 
     async def run_it(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
