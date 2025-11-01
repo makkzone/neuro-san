@@ -270,6 +270,10 @@ class DataDrivenChatSession(RunTarget):
         return_sly_data: Dict[str, Any] = redactor.filter_config(self.sly_data)
 
         # Stream over chat state as the last message
+        # Use the interceptor to write the message.
+        # This guy wraps the journal from the invocation context and listens to the
+        # messages coming across, which allows us to report to the tracing infrastructure
+        # at the end of the tracing context.
         message = AgentFrameworkMessage(content=answer, chat_context=return_chat_context,
                                         sly_data=return_sly_data, structure=structure)
         await self.interceptor.write_message(message, origin=None)
