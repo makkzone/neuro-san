@@ -544,6 +544,9 @@ class LangChainRunContext(RunContext):
         # Make a nested chain where each journal is wrapped by the next
         base_journal: Journal = self.invocation_context.get_journal()
         self.interceptor = InterceptingJournal(wrapped_journal=base_journal, origin=self.origin)
+
+        # The SystemMessage has already been written to the journal
+        # need to transfer it over when this shift happens.
         if old_interceptor is not None:
             for message in old_interceptor.get_messages():
                 self.interceptor.write_unwrapped_message(message, self.origin)
