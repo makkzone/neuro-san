@@ -376,15 +376,18 @@ class LangChainRunContext(RunContext):
                     "tool_call_id"  The string id of the tool_call being executed
         :return: A potentially updated run handle
         """
+        tool_message: BaseMessage = None
         if tool_outputs is not None and len(tool_outputs) > 0:
             for tool_output in tool_outputs:
-                tool_message: BaseMessage = self.parse_tool_output(tool_output)
+                tool_message = self.parse_tool_output(tool_output)
                 if tool_message is not None:
-                    # Chat history is updated in write_message()
+                    # Write the tool message to the journal.
+                    # Chat history should only contain user and AI messages.
+                    # It will not be updated in the write_message() call below.
                     await self.journal.write_message(tool_message)
 
         # Create a run to return
-        run = LangChainRun(self.run_id_base, self.chat_history)
+        run = LangChainRun(self.run_id_base, self.chat_history, tool_message=tool_message)
 
         return run
 

@@ -25,6 +25,7 @@ import logging
 import traceback
 
 from pydantic_core import ValidationError
+from langchain_core.messages.base import BaseMessage
 from langchain_core.tools import BaseTool
 
 from neuro_san.internals.run_context.interfaces.tool_caller import ToolCaller
@@ -230,8 +231,6 @@ It's function_json is described thusly:
         if run is None:
             return None
 
-        # Assume the last message in the Run's chat_history holds the answer.
-        # This eventually gets integrated into the CallingTool/tool_caller
-        # in its submit_tool_outputs() call for its RunContext.
-        the_answer = run.get_chat_history()[-1]
+        # Assume the answer is latest tool message in the Run.
+        the_answer: BaseMessage = run.get_tool_message()
         return the_answer
