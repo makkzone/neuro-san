@@ -43,6 +43,10 @@ class MetadataUtil:
         """
         minimized: Dict[str, Any] = {}
 
+        if request_metadata is None:
+            # No request data, nothing to fill
+            return minimized
+
         # If there are no keys, there is nothing to fill.
         if not keys:
             return minimized
