@@ -133,6 +133,12 @@ These tools extend from the `CodedTool` class.
 Fully qualified class name in the format `tool_module.ToolClass`. The `class` must point to a module available in your
 `AGENT_TOOL_PATH` and server `PYTHONPATH`.
 
+Example:
+
+```hocon
+"class": "get_current_date_time.GetCurrentDateTime"
+```
+
 #### [`description`](./agent_hocon_reference.md#description)
 
 A plain-language explanation of the tool’s behavior. This is essential for agents to understand how and when to use the tool.

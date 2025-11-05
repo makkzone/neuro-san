@@ -203,4 +203,24 @@
     # - "parameters" are arguments' definitions and types.
     # Note: Parameters are optional and may be omitted if not required.
     # See "parameters" section in https://github.com/cognizant-ai-lab/neuro-san/blob/main/docs/agent_hocon_reference.md
+
+    "get_current_date_time": {
+        "class": "get_current_date_time.GetCurrentDateTime",
+        "description": "Get the current date and time for a specified timezone. utc_offset has precedence over iana_timezone.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "utc_offset": {
+                    "type": "int",
+                    "description": "The UTC offset in hours (e.g., -5 for EST, 1 for CET). Must be between -24 and 24. Has precedence over iana_timezone."
+                },
+                "iana_timezone": {
+                    "type": "string",
+                    "description": "The IANA timezone string (e.g., 'America/New_York', 'Europe/Berlin')."
+                }
+            },
+            "required": []
+        }
+    }
+
 }

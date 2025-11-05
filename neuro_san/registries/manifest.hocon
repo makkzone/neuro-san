@@ -57,6 +57,12 @@
 
     # This one is an example of agents calling tools that has no parameters.
     "date_time.hocon": true,
+    # This one is very similar to the previous one except that it can take timezone as a parameter
+    # and return date and time for that timezone.
+    # It is an example of agents calling shared coded tools.
+    # In other words, these coded tools can be used in any agent network.
+    # These tools are also predefined in the toolbox.
+    "date_time_timezone.hocon": true,
 
     # The next one is an example of agents calling langchain base tools from toolbox.
     # This network generate HTTP requests using the Requests Get tool.
