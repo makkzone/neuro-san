@@ -39,6 +39,7 @@ class TestUnitTestHocons(TestCase):
         # These can be in any order.
         # Ideally more basic functionality will come first.
         # Barring that, try to stick to alphabetical order.
+        "date_time_timezone/get_utc_date_time.hocon",
         "math_guy/basic_sly_data.hocon",
         "math_guy/forwarded_sly_data.hocon",
         "math_guy/deep_forwarded_sly_data.hocon",
