@@ -21,7 +21,7 @@
 {
     # Optional metadata describing this agent network
     "metadata": {
-        "description": "Gets date and time",
+        "description": "Gets current UTC date and time",
         "tags": ["example", "utility"],
     },
     "llm_config": {
@@ -57,7 +57,7 @@
         {
             "name": "current_date_time",
             "function": {
-                "description": "Return current date and time",
+                "description": "Return current UTC date and time",
             }
             "class": "date_time.DateTime"
         }

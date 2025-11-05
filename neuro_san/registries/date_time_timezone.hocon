@@ -21,8 +21,8 @@
 {
     # Optional metadata describing this agent network
     "metadata": {
-        "description": "Example of web browsing using Requests Get.",
-        "tags": ["example", "web_browsing", "requests_get"],
+        "description": "Gets current date and time for a specified timezone.",
+        "tags": ["example", "utility"],
     },
     "llm_config": {
         "model_name": "gpt-4o",
@@ -40,39 +40,44 @@
         # call each other is defined within their own specs.
         # This could be a graph, potentially even with cycles.
         {
-            "name": "browser",
-            "instructions": "Use your tool to respond to the inquiry.",
-             "function": {
-                "description": "Assist user with answer from the given web URL."
-             }
-            "tools": ["web_browse_tool"]
+            "name": "date_time_provider",
+
+            # Note that there are no parameters defined for this guy's "function" key.
+            # This is the primary way to identify this tool as a front-man,
+            # distinguishing it from the rest of the tools.
+
+            "function": {
+                # The description acts as an initial prompt. 
+                "description": "Assist caller with current date and time.",
+            },
+
+            "instructions": "Use your tool to provide current date and time.",
+            "tools": ["current_date_time"]
         },
         {
-            "name": "web_browse_tool",
-            # The "toolbox" specifies which tool in the toolbox should be instantiated.
-            # In this case, "requests_get" is chosen, which implements HTTP GET request.
-
+            "name": "current_date_time",
+            "toolbox": "get_current_date_time"
+            # The "toolbox" specifies which tool in the toolbox should be used by the agent.
+            # In this case, "get_current_date_time" is chosen, which return current date and time
+            # for a specified timezone.
+            #
             # Note that tools in toolbox can be either langchain tools or coded tools
-            
-            # Documentation on the request get tool:
-            # - LangChain's Requests Get Tool: https://python.langchain.com/api_reference/community/tools/langchain_community.tools.requests.tool.RequestsGetTool.html
-            
-            "toolbox": "requests_get",
 
+            "args": {
+                "utc_offset": 0
+            }
             # "args" contains the parameters that will be passed to the selected tool.
             # These arguments must align with the tool’s expected function signature.
             # 
-            # For "requests_get", one of the key parameters is "allow_dangerous_requests", 
-            # which enables execution of potentially unsafe requests.
-            # This parameter must be explicitly set to true to use this tool.
+            # For "get_current_date_time", one of the parameters is "utc_offset", 
+            # which specifies the timezone offset from UTC.
             # 
             # Other tools will have different required/optional arguments, so be sure to refer to
             # the tool’s documentation to understand what parameters can be configured.
-
-            "args": {
-                "allow_dangerous_requests": true
-            }
-
+            #
+            # Note that for shared coded tools, the parameters can also be provided by the calling agent at runtime.
+            # However, the values provided in "args" here will have precedence over those provided at runtime.
+            #
             # -------------------------------------------------------------------------------
             # CURRENTLY AVAILABLE TOOLS IN TOOLBOX
             # The following tools can be used as values for "toolbox":
@@ -104,7 +109,6 @@
             #
             #   See https://github.com/cognizant-ai-lab/neuro-san/blob/main/docs/toolbox_info_hocon_reference.md
             # -------------------------------------------------------------------------------
-
         }
     ]
 }

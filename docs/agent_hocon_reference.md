@@ -596,6 +596,11 @@ For more details on tool extension, see the [Toolbox Extension Guide](./toolbox_
 
 For more information on tool schema, see the [toolbox_info_hocon_reference](./toolbox_info_hocon_reference.md).
 
+Example networks using tools from toolbox:
+
+- [date_time_timezone.hocon](../neuro_san/registries/date_time_timezone.hocon) which uses predefined
+coded tools.
+
 ### args
 
 Args is an optional dictionary for agents representing CodedTools to pass other
