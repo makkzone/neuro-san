@@ -129,6 +129,14 @@ class McpToolsProcessor:
             self.logger.error(metadata, "Tool %s execution failed: %s", tool_name, str(exc))
             return McpErrorsUtil.get_tool_error(request_id, f"Failed to execute tool {tool_name}")
 
+        finally:
+            # We are done with response stream - ensure generator is closed:
+            if result_generator is not None:
+                with contextlib.suppress(Exception):
+                    # It is possible we will call .aclose() twice
+                    # on our result_generator - it is allowed and has no effect.
+                    await result_generator.aclose()
+
         # Return tool call result:
         return {
             "jsonrpc": "2.0",
