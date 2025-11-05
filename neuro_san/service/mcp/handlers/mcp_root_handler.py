@@ -63,6 +63,11 @@ class McpRootHandler(BaseRequestHandler):
         #     of a particular grouping.
         self.network_storage_dict: Dict[str, AgentNetworkStorage] = self.server_context.get_network_storage_dict()
 
+        # Chat tool execution timeout in seconds if specified:
+        self.chat_tool_timeout_seconds: float = float(self.server_context.get_chat_request_timeout_seconds())
+        if self.chat_tool_timeout_seconds <= 0:
+            self.chat_tool_timeout_seconds = None
+
         self.set_header("Access-Control-Allow-Origin", "*")
         self.set_header("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
         headers: str = "Content-Type, Transfer-Encoding"
@@ -157,13 +162,21 @@ class McpRootHandler(BaseRequestHandler):
         try:
             if method == "tools/list":
                 tools_processor: McpToolsProcessor =\
-                    McpToolsProcessor(self.logger, self.network_storage_dict, self.agent_policy)
+                    McpToolsProcessor(
+                        self.logger,
+                        self.network_storage_dict,
+                        self.agent_policy,
+                        self.chat_tool_timeout_seconds)
                 result_dict: Dict[str, Any] = await tools_processor.list_tools(request_id, metadata)
                 self.set_status(HTTPStatus.OK)
                 self.write(result_dict)
             elif method == "tools/call":
                 tools_processor: McpToolsProcessor =\
-                    McpToolsProcessor(self.logger, self.network_storage_dict, self.agent_policy)
+                    McpToolsProcessor(
+                        self.logger,
+                        self.network_storage_dict,
+                        self.agent_policy,
+                        self.chat_tool_timeout_seconds)
                 call_params: Dict[str, Any] = data.get("params", {})
                 tool_name: str = call_params.get("name")
                 prompt: str = call_params.get("arguments", {}).get("input", "")

@@ -21,6 +21,10 @@ from typing import Any
 from typing import Dict
 from typing import List
 
+import asyncio
+import contextlib
+import tornado
+
 from neuro_san.interfaces.concierge_session import ConciergeSession
 from neuro_san.internals.network_providers.agent_network_storage import AgentNetworkStorage
 from neuro_san.service.http.interfaces.agent_authorizer import AgentAuthorizer
@@ -42,10 +46,12 @@ class McpToolsProcessor:
     def __init__(self,
                  logger: HttpLogger,
                  network_storage_dict: AgentNetworkStorage,
-                 agent_policy: AgentAuthorizer):
+                 agent_policy: AgentAuthorizer,
+                 tool_timeout_seconds: float):
         self.logger: HttpLogger = logger
         self.network_storage_dict: AgentNetworkStorage = network_storage_dict
         self.agent_policy: AgentAuthorizer = agent_policy
+        self.tool_timeout_seconds: float = tool_timeout_seconds
 
     async def list_tools(self, request_id, metadata: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -91,11 +97,34 @@ class McpToolsProcessor:
         input_request: Dict[str, Any] = self._get_chat_input_request(prompt)
         response_text: str = ""
         try:
-            result_generator = service.streaming_chat(input_request, metadata)
-            async for result_dict in result_generator:
-                partial_response: str = await self._extract_tool_response_part(result_dict)
-                if partial_response is not None:
-                    response_text = response_text + partial_response
+            async with asyncio.timeout(self.tool_timeout_seconds):
+                result_generator = service.streaming_chat(input_request, metadata)
+                async for result_dict in result_generator:
+                    partial_response: str = await self._extract_tool_response_part(result_dict)
+                    if partial_response is not None:
+                        response_text = response_text + partial_response
+        except (asyncio.CancelledError, tornado.iostream.StreamClosedError):
+            # ensure generator is closed promptly
+            if result_generator is not None:
+                # Suppress possible exceptions: they are of no interest here.
+                with contextlib.suppress(Exception):
+                    await result_generator.aclose()
+                    result_generator = None
+            self.logger.info(metadata, "Tool execution %s cancelled/stream closed.", tool_name)
+            return McpErrorsUtil.get_tool_error(request_id, f"Stream closed for tool {tool_name}")
+
+        except asyncio.TimeoutError:
+            # ensure generator is closed promptly
+            if result_generator is not None:
+                # Suppress possible exceptions: they are of no interest here.
+                with contextlib.suppress(Exception):
+                    await result_generator.aclose()
+                    result_generator = None
+            self.logger.info(metadata,
+                             "Chat tool timeout for %s in %f seconds.",
+                             tool_name, self.tool_timeout_seconds)
+            return McpErrorsUtil.get_tool_error(request_id, f"Timeout for tool {tool_name}")
+
         except Exception as exc:  # pylint: disable=broad-exception-caught
             self.logger.error(metadata, "Tool %s execution failed: %s", tool_name, str(exc))
             return McpErrorsUtil.get_tool_error(request_id, f"Failed to execute tool {tool_name}")

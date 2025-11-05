@@ -270,4 +270,9 @@ ENV AGENT_EXTERNAL_RESERVATIONS_STORAGE=""
 # to use for cross-pod reservations storage.
 ENV AGENT_RESERVATIONS_S3_BUCKET=""
 
+# Umbrella timeout in seconds for processing each chat request,
+# both for neuro-san API and for MCP server protocol.
+# A value of 0 indicates no timeout will be used.
+ENV AGENT_CHAT_REQUEST_TIMEOUT=0
+
 ENTRYPOINT "${APP_ENTRYPOINT}"
