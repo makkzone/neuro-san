@@ -285,7 +285,6 @@ class LangChainRunContext(RunContext):
         message_list.extend([
             ("placeholder", "{chat_history}"),
             ("human", "{input}"),
-            ("placeholder", "{agent_scratchpad}"),
         ])
 
         prompt: ChatPromptTemplate = ChatPromptTemplate.from_messages(message_list)
