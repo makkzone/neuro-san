@@ -1,17 +1,12 @@
 
-# Copyright © 2023-2025 Cognizant Technology Solutions Corp, www.cognizant.com.
+# Copyright (C) 2023-2025 Cognizant Digital Business, Evolutionary AI.
+# All Rights Reserved.
+# Issued under the Academic Public License.
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# You can be released from the terms, and requirements of the Academic Public
+# License by purchasing a commercial license.
+# Purchase of a commercial license is mandatory for any use of the
+# neuro-san SDK Software in commercial settings.
 #
 # END COPYRIGHT
 """
@@ -19,7 +14,6 @@ See class comment for details
 """
 from typing import Any
 from typing import Dict
-from typing import Generator
 
 import asyncio
 import contextlib
@@ -35,31 +29,6 @@ class StreamingChatHandler(BaseRequestHandler):
     Handler class for neuro-san streaming chat API call.
     """
 
-    async def stream_out(self,
-                         generator: Generator[Dict[str, Any], None, None]) -> int:
-        """
-        Process streaming out generator output to HTTP connection.
-        :param generator: async chat response generator
-        :return: number of chat responses streamed out.
-        """
-        # Set up headers for chunked response
-        self.set_header("Content-Type", "application/json-lines")
-        self.set_header("Transfer-Encoding", "chunked")
-        # Flush headers immediately
-        flush_ok: bool = await self.do_flush()
-        if not flush_ok:
-            return 0
-
-        sent_out: int = 0
-        async for result_dict in generator:
-            result_str: str = json.dumps(result_dict) + "\n"
-            self.write(result_str)
-            flush_ok = await self.do_flush()
-            if not flush_ok:
-                return sent_out
-            sent_out += 1
-        return sent_out
-
     async def post(self, agent_name: str):
         """
         Implementation of POST request handler for streaming chat API call.
@@ -71,11 +40,15 @@ class StreamingChatHandler(BaseRequestHandler):
             return
 
         self.application.start_client_request(metadata, f"{agent_name}/streaming_chat")
+        # Set up request timeout if it is specified:
+        request_timeout: float = float(self.server_context.get_chat_request_timeout_seconds())
+        if request_timeout <= 0.0:
+            # For asyncio.timeout(), None means no timeout:
+            request_timeout = None
         result_generator = None
         try:
             # Parse JSON body
             data = json.loads(self.request.body)
-            result_generator = service.streaming_chat(data, metadata)
 
             # Set up headers for chunked response
             self.set_header("Content-Type", "application/json-lines")
@@ -88,14 +61,16 @@ class StreamingChatHandler(BaseRequestHandler):
                 # Raise accordingly - we will handle this exception:
                 raise tornado.iostream.StreamClosedError()
 
-            async for result_dict in result_generator:
-                result_str: str = json.dumps(result_dict) + "\n"
-                self.write(result_str)
-                flush_ok = await self.do_flush()
-                if not flush_ok:
-                    # Raise exception to be handled as a general
-                    # "stream abruptly closed" case:
-                    raise tornado.iostream.StreamClosedError()
+            async with asyncio.timeout(request_timeout):
+                result_generator = service.streaming_chat(data, metadata)
+                async for result_dict in result_generator:
+                    result_str: str = json.dumps(result_dict) + "\n"
+                    self.write(result_str)
+                    flush_ok = await self.do_flush()
+                    if not flush_ok:
+                        # Raise exception to be handled as a general
+                        # "stream abruptly closed" case:
+                        raise tornado.iostream.StreamClosedError()
 
         except (asyncio.CancelledError, tornado.iostream.StreamClosedError):
             # ensure generator is closed promptly
@@ -107,6 +82,18 @@ class StreamingChatHandler(BaseRequestHandler):
                     result_generator = None
             self.logger.info(metadata, "Request handler cancelled/stream closed.")
             raise
+
+        except asyncio.TimeoutError:
+            # ensure generator is closed promptly
+            if result_generator is not None:
+                # Suppress possible exceptions: they are of no interest here.
+                with contextlib.suppress(Exception):
+                    await result_generator.aclose()
+                    result_generator = None
+            self.logger.info(metadata, "Chat request timeout for %s in %f seconds.", agent_name, request_timeout)
+            # Recommended HTTP response code: Service Unavailable
+            self.set_status(503)
+            self.write({"error": "Request timeout"})
 
         except Exception as exc:  # pylint: disable=broad-exception-caught
             # Suppress possible exceptions: they are of no interest here.

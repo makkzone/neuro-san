@@ -41,6 +41,7 @@ class ServerContext:
         self.executor_pool = AsyncioExecutorPool(reuse_mode=True)
         self.queues: Queue[AsyncCollatingQueue] = Queue()
         self.mcp_server_context: McpServerContext = McpServerContext()
+        self.chat_request_timeout_seconds: int = 0
 
         # Dictionary is string key (describing scope) to AgentNetworkStorage grouping.
         self.network_storage_dict: Dict[str, AgentNetworkStorage] = {
@@ -91,3 +92,15 @@ class ServerContext:
         :return: The MCPServerContext for MCP service operations
         """
         return self.mcp_server_context
+
+    def set_chat_request_timeout_seconds(self, timeout_seconds: int):
+        """
+        Sets the chat request timeout in seconds
+        """
+        self.chat_request_timeout_seconds = timeout_seconds
+
+    def get_chat_request_timeout_seconds(self) -> int:
+        """
+        :return: The chat request timeout in seconds
+        """
+        return self.chat_request_timeout_seconds

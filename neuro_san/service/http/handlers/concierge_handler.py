@@ -37,7 +37,8 @@ class ConciergeHandler(BaseRequestHandler):
         """
         metadata: Dict[str, Any] = self.get_metadata()
         self.application.start_client_request(metadata, "/api/v1/list")
-        public_storage: AgentNetworkStorage = self.network_storage_dict.get("public")
+        network_storage_dict: Dict[str, AgentNetworkStorage] = self.server_context.get_network_storage_dict()
+        public_storage: AgentNetworkStorage = network_storage_dict.get("public")
         try:
             data: Dict[str, Any] = {}
             session: ConciergeSession = DirectConciergeSession(public_storage, metadata=metadata)

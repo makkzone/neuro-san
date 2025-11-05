@@ -272,13 +272,13 @@ class HttpServer(AgentAuthorizer, AgentStateListener):
     def build_request_data(self) -> Dict[str, Any]:
         """
         Build request data for Http handlers.
-        :return: a dictionary with request data to be passed to a http handler.
+        :return: a dictionary with request data to be passed to an http handler.
         """
         return {
             "agent_policy": self,
             "forwarded_request_metadata": self.forwarded_request_metadata,
             "openapi_service_spec_path": self.openapi_service_spec_path,
-            "network_storage_dict": self.server_context.get_network_storage_dict()
+            "server_context": self.server_context
         }
 
     def build_mcp_request_data(self) -> Dict[str, Any]:

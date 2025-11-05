@@ -17,10 +17,11 @@
 """
 See class comment for details
 """
-import http
 from typing import Any
 from typing import Dict
 from typing import List
+
+from http import HTTPStatus
 
 import json
 import os
@@ -32,8 +33,8 @@ from tornado.web import RequestHandler
 from leaf_common.utils.async_atomic_counter import AsyncAtomicCounter
 from neuro_san.service.generic.async_agent_service import AsyncAgentService
 from neuro_san.service.generic.async_agent_service_provider import AsyncAgentServiceProvider
-from neuro_san.internals.network_providers.agent_network_storage import AgentNetworkStorage
 from neuro_san.service.http.interfaces.agent_authorizer import AgentAuthorizer
+from neuro_san.service.utils.server_context import ServerContext
 from neuro_san.service.http.logging.http_logger import HttpLogger
 
 
@@ -52,12 +53,11 @@ class BaseRequestHandler(RequestHandler):
         """
         This method is called by Tornado framework to allow
         injecting service-specific data into local handler context.
-        :param agent_policy: abstract policy for agent requests
-        :param forwarded_request_metadata: request metadata to forward.
-        :param openapi_service_spec_path: file path to OpenAPI service spec.
-        :param network_storage_dict: A dictionary of string (descripting scope) to
-                    AgentNetworkStorage instance which keeps all the AgentNetwork instances
-                    of a particular grouping.
+        :param kwargs: dictionary of named parameters, including:
+            "agent_policy" - abstract policy for agent requests;
+            "forwarded_request_metadata" - list of request metadata keys to forward;
+            "openapi_service_spec_path" - file path to OpenAPI service spec;
+            "server_context" - ServerContext instance for this server.
         """
         # Set up local members from kwargs dictionary passed in:
         # type: AgentAuthorizer
@@ -66,8 +66,8 @@ class BaseRequestHandler(RequestHandler):
         self.forwarded_request_metadata: List[str] = kwargs.pop("forwarded_request_metadata", [])
         # type: str
         self.openapi_service_spec_path: str = kwargs.pop("openapi_service_spec_path", None)
-        # type: Dict[str, AgentNetworkStorage]
-        self.network_storage_dict: Dict[str, AgentNetworkStorage] = kwargs.pop("network_storage_dict", {})
+        # type: ServberContext
+        self.server_context: ServerContext = kwargs.pop("server_context", None)
 
         self.logger = HttpLogger(self.forwarded_request_metadata)
         self.show_absent: bool = os.environ.get("SHOW_ABSENT_METADATA") is not None
@@ -153,13 +153,13 @@ class BaseRequestHandler(RequestHandler):
             return
         if isinstance(exc, json.JSONDecodeError):
             # Handle invalid JSON input
-            self.set_status(400)
+            self.set_status(HTTPStatus.BAD_REQUEST)
             self.write({"error": "Invalid JSON format"})
             self.logger.error(self.get_metadata(), "error: Invalid JSON format")
             return
 
         # General exception case:
-        self.set_status(500)
+        self.set_status(HTTPStatus.INTERNAL_SERVER_ERROR)
         self.write({"error": "Internal server error"})
         self.logger.error(self.get_metadata(), "Internal server error: %s", str(exc))
 
@@ -225,5 +225,5 @@ class BaseRequestHandler(RequestHandler):
         Handles OPTIONS requests for CORS support
         """
         # No body needed. Tornado will return a 204 No Content by default
-        self.set_status(http.HTTPStatus.NO_CONTENT)
+        self.set_status(HTTPStatus.NO_CONTENT)
         self.do_finish()

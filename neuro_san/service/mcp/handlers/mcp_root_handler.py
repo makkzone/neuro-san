@@ -26,6 +26,7 @@ from typing import Tuple
 from http import HTTPStatus
 
 from neuro_san.internals.interfaces.dictionary_validator import DictionaryValidator
+from neuro_san.internals.network_providers.agent_network_storage import AgentNetworkStorage
 from neuro_san.service.http.handlers.base_request_handler import BaseRequestHandler
 from neuro_san.service.utils.mcp_server_context import McpServerContext
 from neuro_san.service.mcp.session.mcp_session_manager import McpSessionManager, MCP_SESSION_ID, MCP_PROTOCOL_VERSION
@@ -51,17 +52,16 @@ class McpRootHandler(BaseRequestHandler):
         """
         This method is called by Tornado framework to allow
         injecting service-specific data into local handler context.
-        :param agent_policy: abstract policy for agent requests
-        :param forwarded_request_metadata: request metadata to forward.
-        :param mcp_context: MCP server context to use
-        :param network_storage_dict: A dictionary of string (describing scope) to
-                    AgentNetworkStorage instance which keeps all the AgentNetwork instances
-                    of a particular grouping.
         """
-        # type: McpServerContext
-        self.mcp_context: McpServerContext = kwargs.pop("mcp_context", None)
         # Initialize members of the base class BaseRequestHandler:
         super().initialize(**kwargs)
+
+        # type: McpServerContext
+        self.mcp_context: McpServerContext = self.server_context.get_mcp_server_context()
+        # A dictionary of string (describing scope) to
+        #     AgentNetworkStorage instance which keeps all the AgentNetwork instances
+        #     of a particular grouping.
+        self.network_storage_dict: Dict[str, AgentNetworkStorage] = self.server_context.get_network_storage_dict()
 
         self.set_header("Access-Control-Allow-Origin", "*")
         self.set_header("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")

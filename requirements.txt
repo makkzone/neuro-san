@@ -6,7 +6,7 @@
 # requirements-build.txt
 
 # In-house dependencies
-leaf-common>=1.2.31
+leaf-common>=1.2.32
 leaf-server-common>=0.1.22
 
 # These are needed for generating code from .proto files
