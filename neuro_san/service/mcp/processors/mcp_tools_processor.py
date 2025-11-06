@@ -103,23 +103,12 @@ class McpToolsProcessor:
                     partial_response: str = await self._extract_tool_response_part(result_dict)
                     if partial_response is not None:
                         response_text = response_text + partial_response
+
         except (asyncio.CancelledError, tornado.iostream.StreamClosedError):
-            # ensure generator is closed promptly
-            if result_generator is not None:
-                # Suppress possible exceptions: they are of no interest here.
-                with contextlib.suppress(Exception):
-                    await result_generator.aclose()
-                    result_generator = None
             self.logger.info(metadata, "Tool execution %s cancelled/stream closed.", tool_name)
             return McpErrorsUtil.get_tool_error(request_id, f"Stream closed for tool {tool_name}")
 
         except asyncio.TimeoutError:
-            # ensure generator is closed promptly
-            if result_generator is not None:
-                # Suppress possible exceptions: they are of no interest here.
-                with contextlib.suppress(Exception):
-                    await result_generator.aclose()
-                    result_generator = None
             self.logger.info(metadata,
                              "Chat tool timeout for %s in %f seconds.",
                              tool_name, self.tool_timeout_seconds)
@@ -130,7 +119,8 @@ class McpToolsProcessor:
             return McpErrorsUtil.get_tool_error(request_id, f"Failed to execute tool {tool_name}")
 
         finally:
-            # We are done with response stream - ensure generator is closed:
+            # We are done with response stream,
+            # ensure generator is closed properly in any case:
             if result_generator is not None:
                 with contextlib.suppress(Exception):
                     # It is possible we will call .aclose() twice
