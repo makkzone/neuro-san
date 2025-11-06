@@ -66,7 +66,7 @@ class BaseRequestHandler(RequestHandler):
         self.forwarded_request_metadata: List[str] = kwargs.pop("forwarded_request_metadata", [])
         # type: str
         self.openapi_service_spec_path: str = kwargs.pop("openapi_service_spec_path", None)
-        # type: ServberContext
+        # type: ServerContext
         self.server_context: ServerContext = kwargs.pop("server_context", None)
 
         self.logger = HttpLogger(self.forwarded_request_metadata)
