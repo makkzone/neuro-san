@@ -232,6 +232,5 @@ It's function_json is described thusly:
             return None
 
         # Assume the answer is latest tool message in the Run.
-        # the_answer: BaseMessage = run.get_tool_message()
-        the_answer: BaseMessage = run.get_chat_history()[-1]
+        the_answer: BaseMessage = run.get_tool_message()
         return the_answer
