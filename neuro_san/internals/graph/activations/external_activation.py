@@ -20,6 +20,7 @@ from typing import Dict
 from typing import List
 from typing import Union
 
+import contextlib
 import json
 
 from logging import getLogger
@@ -192,10 +193,19 @@ class ExternalActivation(AbstractCallableActivation):
         # The asynchronous generator will wait until the next response is available
         # from the stream.  When the other side is done, the iterator will exit the loop.
         empty = {}
-        async for chat_response in chat_responses:
-
-            response: Dict[str, Any] = chat_response.get("response", empty)
-            await self.processor.async_process_message(response)
+        try:
+            async for chat_response in chat_responses:
+                response: Dict[str, Any] = chat_response.get("response", empty)
+                await self.processor.async_process_message(response)
+        finally:
+            # We are done with response stream, make sure to close it properly.
+            # We don't handle any possible exceptions here
+            # but response stream must be closed in any case.
+            if chat_responses is not None:
+                with contextlib.suppress(Exception):
+                    # It is possible we will call .aclose() twice
+                    # on our chat_responses - it is allowed and has no effect.
+                    await chat_responses.aclose()
 
         # Get stuff back from the message processing
         answer: str = self.processor.get_compiled_answer()
