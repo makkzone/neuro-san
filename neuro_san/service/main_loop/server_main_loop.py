@@ -142,14 +142,6 @@ class ServerMainLoop:
                                                            DEFAULT_HTTP_SERVER_MONITOR_INTERVAL_SECONDS)),
                                 help="Http server resources monitoring/logging interval in seconds "
                                      "0 means no logging")
-        arg_parser.add_argument("--chat_request_timeout_seconds", type=int,
-                                default=int(os.environ.get("AGENT_CHAT_REQUEST_TIMEOUT",
-                                                           DEFAULT_HTTP_CHAT_REQUEST_TIMEOUT_SECONDS)),
-                                help="Http server timeout for processing chat request in seconds "
-                                     "(0 means no timeout is used)."
-                                     "NOTE: this parameter is temporary and will be removed in future releases"
-                                     " to be replaced by per-agent timeout configuration instead."
-                                )
         arg_parser.add_argument("--mcp_enable", type=str,
                                 default=os.environ.get("AGENT_MCP_ENABLE", "false"),
                                 help="'true' if MCP protocol service should be enabled")
@@ -170,7 +162,6 @@ class ServerMainLoop:
         self.server_name = args.server_name
         server_status = ServerStatus(self.server_name)
         self.server_context.set_server_status(server_status)
-        self.server_context.set_chat_request_timeout_seconds(args.chat_request_timeout_seconds)
 
         server_status.grpc_service.set_requested(False)
         self.http_port = args.http_port
