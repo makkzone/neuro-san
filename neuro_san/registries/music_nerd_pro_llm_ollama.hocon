@@ -28,7 +28,7 @@
         "model_name": "qwen3:8b",
         "reasoning": false,
         # Setting for docker env
-        "base_url": "ollama"
+        "base_url": "http://ollama:11434"
     },
 
     # Ollama runs entirely on your local CPU by default, which makes inference much slower than cloud-hosted LLMs. 

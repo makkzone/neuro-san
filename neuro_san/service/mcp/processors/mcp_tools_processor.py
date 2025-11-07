@@ -46,10 +46,12 @@ class McpToolsProcessor:
     def __init__(self,
                  logger: HttpLogger,
                  network_storage_dict: AgentNetworkStorage,
-                 agent_policy: AgentAuthorizer):
+                 agent_policy: AgentAuthorizer,
+                 tool_timeout_seconds: float):
         self.logger: HttpLogger = logger
         self.network_storage_dict: AgentNetworkStorage = network_storage_dict
         self.agent_policy: AgentAuthorizer = agent_policy
+        self.tool_timeout_seconds: float = tool_timeout_seconds
 
     async def list_tools(self, request_id, metadata: Dict[str, Any]) -> Dict[str, Any]:
         """

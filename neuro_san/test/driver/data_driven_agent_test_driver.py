@@ -99,6 +99,9 @@ class DataDrivenAgentTestDriver:
 
         # Loop through each iteration, capturing any asserts.
         num_successful: int = 0
+
+        # Extract the second-to-last part of the path,the parent folder name.
+        fixture_hocon_name = os.path.basename(os.path.dirname(hocon_file))
         for index in range(num_iterations):
 
             _ = index
@@ -108,7 +111,7 @@ class DataDrivenAgentTestDriver:
             iteration_asserts.append(assert_capture)
 
             # Perform a single iteration of the test.
-            self.one_iteration(test_case, assert_capture, timeouts)
+            self.one_iteration(test_case, assert_capture, timeouts, fixture_hocon_name)
 
             # Update our counter if this iteration is successful
             asserts: List[AssertionError] = assert_capture.get_asserts()
@@ -138,7 +141,8 @@ Need at least {num_need_success} to consider {hocon_file} test to be successful.
                 raise AssertionError(message) from one_assert
 
     # pylint: disable=too-many-locals
-    def one_iteration(self, test_case: Dict[str, Any], asserts: AssertForwarder, timeouts: List[Timeout]):
+    def one_iteration(self, test_case: Dict[str, Any], asserts: AssertForwarder,
+                      timeouts: List[Timeout], fixture_hocon_name):
         """
         Perform a single iteration on the test case.
 
@@ -192,7 +196,7 @@ Need at least {num_need_success} to consider {hocon_file} test to be successful.
                     session.reset()
 
                 chat_context = self.interact(agent, session, interaction, chat_context, asserts,
-                                             timeouts)
+                                             timeouts, fixture_hocon_name)
 
     def parse_hocon_test_case(self, hocon_file: str) -> Dict[str, Any]:
         """
@@ -210,7 +214,7 @@ Need at least {num_need_success} to consider {hocon_file} test to be successful.
     # pylint: disable=too-many-locals,too-many-arguments,too-many-positional-arguments
     def interact(self, agent: str, session: AgentSession, interaction: Dict[str, Any],
                  chat_context: Dict[str, Any], asserts: AssertForwarder,
-                 timeouts: List[Timeout]) -> Dict[str, Any]:
+                 timeouts: List[Timeout], fixture_hocon_name) -> Dict[str, Any]:
         """
         Interact with an agent and evaluate its output
 
@@ -230,7 +234,9 @@ Need at least {num_need_success} to consider {hocon_file} test to be successful.
         now = datetime.now()
         datestr: str = now.strftime("%Y-%m-%d-%H:%M:%S")
         thinking_file: str = f"/tmp/agent_test/{datestr}_agent.txt"
-        thinking_dir: str = f"/tmp/agent_test/{datestr}_agent"
+        # Added fixture_hocon_name to thinking_dir
+        # for better uniqueness and traceability across different test fixtures.
+        thinking_dir: str = f"/tmp/agent_test/{datestr}_{fixture_hocon_name}_agent"
 
         # Remove any contents that might be there already.
         # Writing over existing dir will just confuse output.
@@ -246,6 +252,8 @@ Need at least {num_need_success} to consider {hocon_file} test to be successful.
         # Prepare the request
         text: str = interaction.get("text")
         sly_data: str = interaction.get("sly_data")
+        # By having level to MINIMAL avoid unnecesssary thinking file(s) created.
+        # MAXIMAL set to have thinking files.
         chat_filter: Dict[str, Any] = {
             "chat_filter_type": interaction.get("chat_filter", "MINIMAL")
         }

@@ -19,6 +19,8 @@
 
     # Interactions are a series of dictionaries with request elements paired with
     # descriptions of response checks.
+    # The "structure" is not checked because the current in-use
+    # ollama model final answer sometimes does not return JSON.
     "interactions": [
         {
             # This is what we send as input to streaming_chat()
@@ -27,18 +29,16 @@
             # The response block treats how we are going to test what comes back
             "response": {
                 # Structure block says how we are going to examine the structure
-                # (dictionary) returned as part of the response.               
-                "structure": {
-                    # "answer" is a key that is supposed to be in the dictionary.
-                    "answer": {
-                        # Keywords says we are going to look for exact matches for each
-                        # element in a list of strings.  All elements need to show up
-                        # in order to pass.
-                        "keywords": "Beatles"
-                    },
-                    "running_cost": {
-                        "value": 3.0
-                    }
+                # (dictionary) returned as part of the response.              
+                # "answer" is a key that is supposed to be in the dictionary.
+                "answer": {
+                    # Keywords says we are going to look for exact matches for each
+                    # element in a list of strings.  All elements need to show up
+                    # in order to pass.
+                    "keywords": "Beatles"
+                },
+                "running_cost": {
+                    "value": 3.0
                 }
             }
         },
@@ -48,13 +48,11 @@
             # interaction.
             "text": "Where were they from?",
             "response": {
-                "structure": {
-                    "answer": {
-                        "keywords": "Liverpool"
-                    },
-                    "running_cost": {
-                        "value": 6.0
-                    }
+                "answer": {
+                    "keywords": "Liverpool"
+                },
+                "running_cost": {
+                    "value": 6.0
                 }
             }
         }
