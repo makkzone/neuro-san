@@ -285,7 +285,7 @@ This can lead to performance problems when running within a server. Consider por
                 invocation_context = self.run_context.get_invocation_context()
                 executor: AsyncioExecutor = invocation_context.get_asyncio_executor()
                 loop: AbstractEventLoop = executor.get_event_loop()
-                retval = await loop.run_in_executor(None, coded_tool.invoke, self.arguments, self.sly_data)
+                retval = await loop.run_in_executor(None, coded_tool.invoke, arguments, sly_data)
         # pylint: disable=broad-exception-caught
         except Exception as exception:
             tool_error = True
