@@ -94,13 +94,19 @@ class AsyncAgentService:
         self.agent_name: str = agent_name
         self.request_counter = AtomicCounter()
 
+        self.async_executor_pool: AsyncioExecutorPool = server_context.get_executor_pool()
+        self.reload_factories()
+
+    def reload_factories(self):
+        """
+        Reloads the LLM and Toolbox factories from the agent network config.
+        This method is called in the constructor,
+        and also whenever our underlying agent network and its configuration can change.
+        """
         agent_network: AgentNetwork = self.agent_network_provider.get_agent_network()
         config: Dict[str, Any] = agent_network.get_config()
         self.llm_factory: ContextTypeLlmFactory = MasterLlmFactory.create_llm_factory(config)
         self.toolbox_factory: ContextTypeToolboxFactory = MasterToolboxFactory.create_toolbox_factory(config)
-        self.async_executor_pool: AsyncioExecutorPool = server_context.get_executor_pool()
-
-        self.request_timeout_seconds: float = agent_network.get_request_timeout_seconds()
 
         # Load once.
         self.llm_factory.load()
@@ -116,7 +122,7 @@ class AsyncAgentService:
         """
         :return: The request timeout in seconds for this service;
         """
-        return self.request_timeout_seconds
+        return self.agent_network_provider.get_agent_network().get_request_timeout_seconds()
 
     async def function(self, request_dict: Dict[str, Any],
                        request_metadata: Dict[str, Any]) \

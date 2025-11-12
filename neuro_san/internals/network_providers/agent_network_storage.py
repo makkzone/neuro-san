@@ -71,10 +71,10 @@ class AgentNetworkStorage(AgentStorageSource):
         for listener in self.listeners:
             if is_new:
                 listener.agent_added(agent_name, self)
-                self.logger.info("ADDED network for agent %s", agent_name)
+                self.logger.info("ADDED network for agent %s : %d", agent_name, id(agent_network))
             else:
                 listener.agent_modified(agent_name, self)
-                self.logger.info("REPLACED network for agent %s", agent_name)
+                self.logger.info("REPLACED network for agent %s : %d", agent_name, id(agent_network))
 
     def setup_agent_networks(self, agent_networks: Dict[str, AgentNetwork]):
         """
@@ -97,13 +97,15 @@ class AgentNetworkStorage(AgentStorageSource):
         so that agent becomes unavailable on our server.
         """
         with self.lock:
+            agent_network: AgentNetwork = self.agents_table.get(agent_name, None)
             self.agents_table.pop(agent_name, None)
 
         # Notify listeners about this state change:
         # do it outside of internal lock
         for listener in self.listeners:
             listener.agent_removed(agent_name, self)
-        self.logger.info("REMOVED network for agent %s", agent_name)
+        # We can log id(None) if necessary - that's a legal value
+        self.logger.info("REMOVED network for agent %s : %d", agent_name, id(agent_network))
 
     def get_agent_network_provider(self, agent_name: str) -> AgentNetworkProvider:
         """

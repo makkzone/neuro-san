@@ -264,9 +264,10 @@ class HttpServer(AgentAuthorizer, AgentStateListener):
         :param agent_name: name of an agent
         :param source: The AgentStorageSource source of the message
         """
-        # Endpoints configuration has not changed,
-        # so nothing to do here, actually.
-        _ = agent_name
+        agent_service_provider: AsyncAgentServiceProvider = self.allowed_agents.get(agent_name, None)
+        if agent_service_provider is not None:
+            agent_service_provider.reset_service()
+            self.logger.info({}, "Reset service for modified agent %s", agent_name)
 
     def build_request_data(self) -> Dict[str, Any]:
         """

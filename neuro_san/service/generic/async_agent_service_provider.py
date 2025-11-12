@@ -84,6 +84,14 @@ class AsyncAgentServiceProvider:
                         self.server_context)
         return self.service_instance
 
+    def reset_service(self):
+        """
+        Reset service instance to None to allow re-creation on next get_service() call
+        in case underlying AgentNetwork has changed.
+        """
+        with self.lock:
+            self.service_instance = None
+
     def service_created(self) -> bool:
         """
         Return True if service instance has already been instantiated;

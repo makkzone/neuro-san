@@ -23,6 +23,7 @@ from typing import List
 from asyncio import Future
 import contextlib
 from copy import copy
+import logging
 
 from leaf_common.asyncio.asyncio_executor import AsyncioExecutor
 from leaf_common.parsers.dictionary_extractor import DictionaryExtractor
@@ -42,6 +43,8 @@ class AsyncDirectAgentSession(AsyncAgentSession):
     """
     Direct guts for an AsyncAgentSession.
     """
+
+    LOG_AGENT_NETWORK_USAGE: bool = True
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(self,
@@ -71,6 +74,18 @@ class AsyncDirectAgentSession(AsyncAgentSession):
         self.request_id: str = None
         if metadata is not None:
             self.request_id = metadata.get("request_id")
+        self.logger = logging.getLogger(self.__class__.__name__)
+
+    def _log_agent_network_usage(self, operation: str):
+        """
+        Logs the usage of the agent network if enabled.
+        :param operation: The operation being performed (e.g., "function", "connectivity", "streaming_chat").
+        """
+        if self.LOG_AGENT_NETWORK_USAGE:
+            self.logger.info("Agent network '%s' (ID: %d) used for operation: %s",
+                             self.agent_network.get_network_name(),
+                             id(self.agent_network),
+                             operation)
 
     async def function(self, request_dict: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -81,6 +96,7 @@ class AsyncDirectAgentSession(AsyncAgentSession):
                     protobufs structure. Has the following keys:
                 "function" - the dictionary description of the function
         """
+        self._log_agent_network_usage("function")
         _ = request_dict
         response_dict: Dict[str, Any] = {
         }
@@ -107,6 +123,7 @@ class AsyncDirectAgentSession(AsyncAgentSession):
                                     each node in the agent network the service
                                     wants the client ot know about.
         """
+        self._log_agent_network_usage("connectivity")
         _ = request_dict
         response_dict: Dict[str, Any] = {
         }
@@ -138,6 +155,7 @@ class AsyncDirectAgentSession(AsyncAgentSession):
             Note that responses to the chat input might be numerous and will come as they
             are produced until the system decides there are no more messages to be sent.
         """
+        self._log_agent_network_usage("streaming_chat")
         extractor = DictionaryExtractor(request_dict)
 
         # Get the user input.
