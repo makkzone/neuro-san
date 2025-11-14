@@ -87,9 +87,6 @@ class McpRootHandler(BaseRequestHandler):
             # Parse JSON body
             data = json.loads(self.request.body)
 
-            print(f"Received MCP request data: {data}")
-            print(f"Request headers: {self.request.headers}")
-
             # Validate incoming request content:
             request_validator: DictionaryValidator = self.mcp_context.get_request_validator()
             validation_errors = request_validator.validate(data)
