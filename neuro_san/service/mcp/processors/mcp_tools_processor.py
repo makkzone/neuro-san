@@ -20,9 +20,11 @@ See class comment for details
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Tuple
 
 import asyncio
 import contextlib
+import json
 import tornado
 
 from neuro_san.interfaces.concierge_session import ConciergeSession
@@ -85,6 +87,7 @@ class McpToolsProcessor:
         :return: json dictionary with tool response in MCP format;
                  or json dictionary with error message in MCP format.
         """
+        # pylint: disable=too-many-locals
 
         service_provider: AsyncAgentServiceProvider = self.agent_policy.allow(tool_name)
         if service_provider is None:
@@ -98,13 +101,16 @@ class McpToolsProcessor:
 
         input_request: Dict[str, Any] = self._get_chat_input_request(prompt)
         response_text: str = ""
+        response_structure: Dict[str, Any] = None
         try:
             async with asyncio.timeout(tool_timeout_seconds):
                 result_generator = service.streaming_chat(input_request, metadata)
                 async for result_dict in result_generator:
-                    partial_response: str = await self._extract_tool_response_part(result_dict)
+                    partial_response, structure_data = await self._extract_tool_response_part(result_dict)
                     if partial_response is not None:
                         response_text = response_text + partial_response
+                    if structure_data is not None:
+                        response_structure = structure_data
 
         except (asyncio.CancelledError, tornado.iostream.StreamClosedError):
             self.logger.info(metadata, "Tool execution %s cancelled/stream closed.", tool_name)
@@ -130,19 +136,42 @@ class McpToolsProcessor:
                     await result_generator.aclose()
 
         # Return tool call result:
-        return {
+        call_result: Dict[str, Any] = await self.build_tool_call_result(request_id, response_text, response_structure)
+        return call_result
+
+    async def build_tool_call_result(
+            self,
+            request_id,
+            result_text: str,
+            result_structure: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Build MCP tool call result dictionary from given text and structure parts.
+        :param request_id: MCP request id;
+        :param result_text: tool call result text part;
+        :param result_structure: tool call result structure part;
+        :return: json dictionary with tool call result in MCP format;
+        """
+        call_result: Dict[str, Any] = {
             "jsonrpc": "2.0",
             "id": RequestsUtil.safe_request_id(request_id),
             "result": {
                 "content": [
                     {
                         "type": "text",
-                        "text": RequestsUtil.safe_message(response_text)
+                        "text": ""  # to be filled later
                     }
                 ],
                 "isError": False
             }
         }
+        # Construct actual tool call result:
+        if result_structure is not None:
+            call_result["result"]["structuredContent"] = result_structure
+            # For backward compatibility, also add text version of structure:
+            structure_str: str = f"```json\n{json.dumps(result_structure, indent=2)}\n```"
+            result_text = result_text + structure_str
+        call_result["result"]["content"][0]["text"] = result_text
+        return call_result
 
     async def _get_tool_description(self, agent_name: str, metadata: Dict[str, Any]) -> Dict[str, Any]:
         service_provider: AsyncAgentServiceProvider = self.agent_policy.allow(agent_name)
@@ -166,11 +195,17 @@ class McpToolsProcessor:
             }
         }
 
-    async def _extract_tool_response_part(self, response_dict: Dict[str, Any]) -> str:
+    async def _extract_tool_response_part(self, response_dict: Dict[str, Any]) -> Tuple[str, Dict[str, Any]]:
+        """
+        Extract tool response part from the given streaming chat response dictionary.
+        :param response_dict: streaming chat response dictionary;
+        :return: tuple of (text part as string or None, structure part as dictionary or None)
+        """
         response_part_dict: Dict[str, Any] = response_dict.get("response", {})
         response_type: str = response_part_dict.get("type", "")
         if response_type == "AGENT_FRAMEWORK":
-            return response_part_dict.get("text", None)
+            return response_part_dict.get("text", None), response_part_dict.get("structure", None)
+        return None, None
 
     def _get_chat_input_request(self, input_text: str) -> Dict[str, Any]:
         """
