@@ -46,6 +46,7 @@ class SimpleOneShot:
         self.connection_type: str = connection_type
         self.host: str = host
         self.port: int = port
+        self.processor: BasicMessageProcessor = None
 
     def get_answer_for(self, text: str) -> str:
         """
@@ -58,15 +59,21 @@ class SimpleOneShot:
                                                                      hostname=self.host,
                                                                      port=self.port)
         input_processor = StreamingInputProcessor(session=session)
-        processor: BasicMessageProcessor = input_processor.get_message_processor()
+        self.processor = input_processor.get_message_processor()
         request: Dict[str, Any] = input_processor.formulate_chat_request(text)
 
         # Call streaming_chat()
         empty: Dict[str, Any] = {}
         for chat_response in session.streaming_chat(request):
             message: Dict[str, Any] = chat_response.get("response", empty)
-            processor.process_message(message, chat_response.get("type"))
+            self.processor.process_message(message, chat_response.get("type"))
 
-        raw_answer: str = processor.get_compiled_answer()
+        raw_answer: str = self.processor.get_compiled_answer()
 
         return raw_answer
+
+    def get_processor(self) -> BasicMessageProcessor:
+        """
+        :return: The message processor holding the details of the answer from the agent
+        """
+        return self.processor
