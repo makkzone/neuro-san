@@ -27,6 +27,7 @@ from leaf_server_common.logging.logging_setup import setup_logging
 from neuro_san import DEPLOY_DIR
 from neuro_san import TOP_LEVEL_DIR
 from neuro_san.interfaces.agent_session import AgentSession
+from neuro_san.service.interfaces.startable import Startable
 from neuro_san.internals.graph.persistence.registry_manifest_restorer import RegistryManifestRestorer
 from neuro_san.internals.graph.registry.agent_network import AgentNetwork
 from neuro_san.internals.network_providers.agent_network_storage import AgentNetworkStorage
@@ -239,6 +240,9 @@ class ServerMainLoop:
             print("HTTP server is not requested - exiting.")
             return
 
+        # List of components which should be started after http server is created
+        # and have spun up all its instances:
+        components_to_start: List[Startable] = []
         if server_status.updater.is_requested():
             current_dir: str = os.path.dirname(os.path.abspath(__file__))
             setup_logging(server_status.updater.get_service_name(),
@@ -246,7 +250,7 @@ class ServerMainLoop:
                           'AGENT_SERVICE_LOG_JSON',
                           'AGENT_SERVICE_LOG_LEVEL')
             watcher = StorageWatcher(self.watcher_config, self.server_context)
-            watcher.start()
+            components_to_start.append(watcher)
 
         # Create HTTP server;
         self.http_server = HttpServer(
@@ -268,7 +272,7 @@ class ServerMainLoop:
             storage.setup_agent_networks(self.agent_networks.get(storage_type))
 
         # Start http server:
-        self.http_server.start()
+        self.http_server.start(components_to_start)
 
 
 if __name__ == '__main__':

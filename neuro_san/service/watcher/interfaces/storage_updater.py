@@ -15,7 +15,7 @@
 #
 # END COPYRIGHT
 
-from neuro_san.service.watcher.interfaces.startable import Startable
+from neuro_san.service.interfaces.startable import Startable
 
 
 class StorageUpdater(Startable):

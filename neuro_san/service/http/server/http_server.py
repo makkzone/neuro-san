@@ -18,11 +18,11 @@
 See class comment for details
 """
 
-import json
 from typing import Any
 from typing import Dict
 from typing import List
 
+import contextlib
 import random
 import threading
 
@@ -31,6 +31,7 @@ import tornado
 from neuro_san.internals.interfaces.agent_network_provider import AgentNetworkProvider
 from neuro_san.internals.interfaces.agent_state_listener import AgentStateListener
 from neuro_san.internals.interfaces.agent_storage_source import AgentStorageSource
+from neuro_san.service.interfaces.startable import Startable
 from neuro_san.internals.network_providers.agent_network_storage import AgentNetworkStorage
 from neuro_san.service.generic.agent_server_logging import AgentServerLogging
 from neuro_san.service.generic.async_agent_service_provider import AsyncAgentServiceProvider
@@ -42,13 +43,13 @@ from neuro_san.service.http.handlers.concierge_handler import ConciergeHandler
 from neuro_san.service.http.handlers.openapi_publish_handler import OpenApiPublishHandler
 from neuro_san.service.http.interfaces.agent_authorizer import AgentAuthorizer
 from neuro_san.service.http.logging.http_logger import HttpLogger
+from neuro_san.service.http.server.resources_usage_logger import ResourcesUsageLogger
 from neuro_san.service.http.server.http_server_app import HttpServerApp
 from neuro_san.service.interfaces.agent_server import AgentServer
 from neuro_san.service.interfaces.event_loop_logger import EventLoopLogger
 from neuro_san.service.utils.server_status import ServerStatus
 from neuro_san.service.utils.server_context import ServerContext
 from neuro_san.service.http.config.http_server_config import HttpServerConfig
-from neuro_san.service.utils.service_resources import ServiceResources
 from neuro_san.service.mcp.handlers.mcp_root_handler import McpRootHandler
 
 
@@ -115,10 +116,12 @@ class HttpServer(AgentAuthorizer, AgentStateListener):
         for network_storage in network_storage_dict.values():
             network_storage.add_listener(self)
 
-    def start(self):
+    def start(self, startables: List[Startable]):
         """
         Method to be called by a thread running tornado HTTP server
         to actually start serving requests.
+        :param startables: List of Startable instances to start once server
+            has forked its multiple running instances.
         """
         app = self.make_app(self.requests_limit, self.logger)
 
@@ -129,6 +132,14 @@ class HttpServer(AgentAuthorizer, AgentStateListener):
             app,
             idle_connection_timeout=self.server_config.http_idle_connection_timeout_seconds
         )
+
+        if self.server_config.http_server_monitor_interval_seconds > 0:
+            # Add resources usage logger to list of things we need to start
+            # after http server is spun up:
+            resources_logger: Startable =\
+                ResourcesUsageLogger(
+                    self.server_config.http_server_monitor_interval_seconds, self.http_port, self.logger)
+            startables.append(resources_logger)
 
         # Bind the socket with a custom backlog
         server.bind(self.http_port, backlog=self.server_config.http_connections_backlog)
@@ -152,40 +163,13 @@ class HttpServer(AgentAuthorizer, AgentStateListener):
             mcp_version: str = self.server_context.get_mcp_server_context().get_protocol_version()
             self.logger.info({}, f"MCP server is running protocol {mcp_version}")
 
-        if self.server_config.http_server_monitor_interval_seconds > 0:
-            # Start periodic logging of server resources used:
-            tornado.ioloop.PeriodicCallback(
-                self.run_resources_usage,
-                self.server_config.http_server_monitor_interval_seconds * 1000).start()
+        if startables:
+            for startable in startables:
+                with contextlib.suppress(Exception):
+                    startable.start()
 
         tornado.ioloop.IOLoop.current().start()
         self.logger.info({}, "Http server stopped.")
-
-    def log_resources_usage(self):
-        """
-        Log current usage of server run-time resources:
-        file descriptors and open inet connections on server port.
-        """
-        # Get used file descriptors:
-        fd_dict, soft_limit, hard_limit = ServiceResources.get_fd_usage()
-        sock_classes = ServiceResources.classify_sockets(self.http_port)
-        log_dict: Dict[str, Any] = {
-            "soft_limit": soft_limit,
-            "hard_limit": hard_limit,
-            "file_descriptors": fd_dict,
-            "sockets": sock_classes
-        }
-        self.logger.info({}, "Used: %s", json.dumps(log_dict, indent=4))
-
-    async def run_resources_usage(self):
-        """
-        Execute collecting and logging of server run-time resources
-        in on-blocking mode w.r.t. server event loop.
-        This is done because enumerating of some system resources
-        could be relatively slow.
-        """
-        loop = tornado.ioloop.IOLoop.current()
-        return await loop.run_in_executor(None, self.log_resources_usage)
 
     def make_app(self, requests_limit: int, logger: EventLoopLogger):
         """
