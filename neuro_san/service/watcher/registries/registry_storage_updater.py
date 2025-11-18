@@ -85,6 +85,7 @@ class RegistryStorageUpdater(AbstractStorageUpdater):
         """
         # Check events that may have been triggered in target registry:
         modified, added, deleted = self.observer.reset_event_counters()
+
         if modified == added == deleted == 0:
             # Nothing happened - go on observing
             return

@@ -36,7 +36,7 @@ from neuro_san.internals.network_providers.agent_network_storage import AgentNet
 from neuro_san.internals.reservations.agent_reservation import AgentReservation
 from neuro_san.internals.reservations.abstract_agent_reservationist import AbstractAgentReservationist
 from neuro_san.service.watcher.interfaces.abstract_storage_updater import AbstractStorageUpdater
-from neuro_san.service.watcher.interfaces.startable import Startable
+from neuro_san.service.interfaces.startable import Startable
 
 
 class TempNetworkStorageUpdater(AbstractStorageUpdater):

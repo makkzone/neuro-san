@@ -35,7 +35,7 @@ from botocore.exceptions import NoCredentialsError
 
 from neuro_san.interfaces.reservation import Reservation
 from neuro_san.internals.interfaces.reservations_storage import ReservationsStorage
-from neuro_san.service.watcher.interfaces.startable import Startable
+from neuro_san.service.interfaces.startable import Startable
 from neuro_san.service.watcher.temp_networks.reservation_dictionary_converter import ReservationDictionaryConverter
 
 
