@@ -29,7 +29,8 @@ from neuro_san.internals.interfaces.dictionary_validator import DictionaryValida
 from neuro_san.internals.network_providers.agent_network_storage import AgentNetworkStorage
 from neuro_san.service.http.handlers.base_request_handler import BaseRequestHandler
 from neuro_san.service.utils.mcp_server_context import McpServerContext
-from neuro_san.service.mcp.session.mcp_session_manager import McpSessionManager, MCP_SESSION_ID, MCP_PROTOCOL_VERSION
+from neuro_san.service.mcp.interfaces.client_session_policy import ClientSessionPolicy
+from neuro_san.service.mcp.interfaces.client_session_policy import MCP_SESSION_ID, MCP_PROTOCOL_VERSION
 from neuro_san.service.mcp.util.mcp_errors_util import McpErrorsUtil
 from neuro_san.service.mcp.mcp_errors import McpError
 from neuro_san.service.mcp.processors.mcp_tools_processor import McpToolsProcessor
@@ -130,7 +131,8 @@ class McpRootHandler(BaseRequestHandler):
             self.do_finish()
             return
 
-        # For all other methods, we need to have valid protocol version and valid session:
+        # For all other methods, we need to have valid protocol version and valid session id,
+        # it is possible that session id is not provided at all, i.e. None
         if protocol_version != self.mcp_context.get_protocol_version():
             extra_error: str = f"unsupported protocol version {protocol_version}"
             error_msg: Dict[str, Any] =\
@@ -140,10 +142,8 @@ class McpRootHandler(BaseRequestHandler):
             self.logger.error(self.get_metadata(), f"error: {extra_error}")
             self.do_finish()
             return
-        session_active: bool = False
-        if session_id is not None:
-            session_manager: McpSessionManager = self.mcp_context.get_session_manager()
-            session_active = session_manager.is_session_active(session_id)
+        session_policy: ClientSessionPolicy = self.mcp_context.get_session_policy()
+        session_active = session_policy.is_session_active(session_id)
         if not session_active:
             extra_error: str = "invalid or inactive session id"
             error_msg: Dict[str, Any] =\
@@ -233,7 +233,8 @@ class McpRootHandler(BaseRequestHandler):
                 handshake_processor: McpInitializeProcessor = McpInitializeProcessor(self.mcp_context, self.logger)
                 result_dict, session_id =\
                     await handshake_processor.initialize_handshake(request_id, metadata, request_data["params"])
-                self.set_header(MCP_SESSION_ID, session_id)
+                if session_id is not None:
+                    self.set_header(MCP_SESSION_ID, session_id)
                 self.set_status(HTTPStatus.OK)
                 self.write(result_dict)
                 return session_id, True
@@ -243,7 +244,8 @@ class McpRootHandler(BaseRequestHandler):
                 handshake_processor: McpInitializeProcessor = McpInitializeProcessor(self.mcp_context, self.logger)
                 result: bool = await handshake_processor.activate_session(session_id, metadata)
                 response_code: int = HTTPStatus.ACCEPTED if result else HTTPStatus.NOT_FOUND
-                self.set_header(MCP_SESSION_ID, session_id)
+                if session_id is not None:
+                    self.set_header(MCP_SESSION_ID, session_id)
                 self.set_status(response_code)
                 # We do not have any response body for this request
                 return None, True
@@ -281,8 +283,8 @@ class McpRootHandler(BaseRequestHandler):
 
         request_status: int = HTTPStatus.NO_CONTENT
         if session_id is not None:
-            session_manager: McpSessionManager = self.mcp_context.get_session_manager()
-            deleted: bool = session_manager.delete_session(session_id)
+            session_policy: ClientSessionPolicy = self.mcp_context.get_session_policy()
+            deleted: bool = session_policy.delete_session(session_id)
             if deleted:
                 self.logger.info(metadata, "Session %s deleted by client", session_id)
             else:

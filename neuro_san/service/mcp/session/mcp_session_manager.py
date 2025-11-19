@@ -24,13 +24,14 @@ from typing import Dict
 import uuid
 import base64
 
+from neuro_san.service.mcp.interfaces.client_session_policy import ClientSessionPolicy
 from neuro_san.service.mcp.session.mcp_client_session import McpClientSession
 
 MCP_SESSION_ID: str = "Mcp-Session-Id"
 MCP_PROTOCOL_VERSION: str = "MCP-Protocol-Version"
 
 
-class McpSessionManager:
+class McpSessionManager(ClientSessionPolicy):
     """
     Class creating and managing client sessions with the MCP service.
     """
@@ -73,6 +74,8 @@ class McpSessionManager:
         :return: True if successful;
                  False if session with given id does not exist
         """
+        if session_id is None:
+            return False
         with self.lock:
             if session_id in self.sessions:
                 del self.sessions[session_id]
@@ -86,6 +89,8 @@ class McpSessionManager:
         :return: True if session exists and is active;
                  False otherwise
         """
+        if session_id is None:
+            return False
         with self.lock:
             session: McpClientSession = self.sessions.get(session_id)
             if session is not None:

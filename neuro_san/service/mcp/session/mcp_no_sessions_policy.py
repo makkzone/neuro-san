@@ -18,35 +18,36 @@
 See class comment for details
 """
 
+from neuro_san.service.mcp.interfaces.client_session_policy import ClientSessionPolicy
 from neuro_san.service.mcp.interfaces.client_session import ClientSession
 
 
-class McpClientSession(ClientSession):
+class McpNoSessionsPolicy(ClientSessionPolicy):
     """
-    Class representing a client session with the MCP service.
+    Policy class for scenario when client sessions are not supported by the MCP service.
     """
 
-    def __init__(self, session_id: str):
-        self.session_id: str = session_id
+    def create_session(self) -> ClientSession:
+        """
+        Create a None client session if client sessions are not supported.
+        :return: None
+        """
+        return None
 
-        # Flag indicating if the session is properly initialized
-        # by handshake sequence and now active.
-        self.session_is_active: bool = False
+    def activate_session(self, session_id: str) -> bool:
+        """
+        For "no sessions" policy, always return True.
+        """
+        return True
 
-    def get_id(self) -> str:
+    def delete_session(self, session_id: str) -> bool:
         """
-        Get the session id.
+        For "no sessions" policy, always return True.
         """
-        return self.session_id
+        return True
 
-    def is_active(self) -> bool:
+    def is_session_active(self, session_id: str) -> bool:
         """
-        Check if the session is active.
+        For "no sessions" policy, always return True.
         """
-        return self.session_is_active
-
-    def set_active(self, is_active: bool) -> None:
-        """
-        Set the session active flag.
-        """
-        self.session_is_active = is_active
+        return True

@@ -23,7 +23,7 @@ from typing import Tuple
 
 from neuro_san.service.http.logging.http_logger import HttpLogger
 from neuro_san.service.utils.mcp_server_context import McpServerContext
-from neuro_san.service.mcp.session.mcp_client_session import McpClientSession
+from neuro_san.service.mcp.interfaces.client_session import ClientSession
 from neuro_san.service.mcp.util.requests_util import RequestsUtil
 
 
@@ -55,9 +55,11 @@ class McpInitializeProcessor:
 
         _ = params
         # Create new client session:
-        session: McpClientSession = self.mcp_context.get_session_manager().create_session()
-        session_id: str = session.get_id()
-        self.logger.info(metadata, "Created new MCP client session with id: %s", session_id)
+        session: ClientSession = self.mcp_context.get_session_policy().create_session()
+        session_id: str = None
+        if session:
+            session_id = session.get_id()
+            self.logger.info(metadata, "Created new MCP client session with id: %s", session_id)
 
         response_dict: Dict[str, Any] =\
             {
@@ -95,7 +97,9 @@ class McpInitializeProcessor:
         :return: True if successful;
                  False if session with given id does not exist
         """
-        success: bool = self.mcp_context.get_session_manager().activate_session(session_id)
+        success: bool = self.mcp_context.get_session_policy().activate_session(session_id)
+        if not session_id:
+            session_id = "N/A"
         if success:
             self.logger.info(metadata,
                              "Activated MCP client session with id: %s",

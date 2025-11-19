@@ -22,7 +22,9 @@ import json
 from neuro_san import TOP_LEVEL_DIR
 from neuro_san.internals.interfaces.dictionary_validator import DictionaryValidator
 from neuro_san.service.mcp.validation.mcp_request_validator import McpRequestValidator
+from neuro_san.service.mcp.interfaces.client_session_policy import ClientSessionPolicy
 from neuro_san.service.mcp.session.mcp_session_manager import McpSessionManager
+from neuro_san.service.mcp.session.mcp_no_sessions_policy import McpNoSessionsPolicy
 
 # MCP protocol version supported by this service
 # Protocol specification is available at:
@@ -39,7 +41,7 @@ class McpServerContext:
     def __init__(self):
         self.protocol_schema_filepath = None
         self.protocol_schema = None
-        self.session_manager = None
+        self.session_policy = None
         self.request_validator = None
         self.enabled: bool = False
 
@@ -61,7 +63,7 @@ class McpServerContext:
                 raise RuntimeError(f"Cannot load MCP protocol schema from "
                                    f"'{self.protocol_schema_filepath}': {str(exc)}") from exc
             # Create new session manager:
-            self.session_manager = McpSessionManager()
+            self.session_policy = McpNoSessionsPolicy()
         self.enabled = enabled
 
     def is_enabled(self) -> bool:
@@ -86,9 +88,9 @@ class McpServerContext:
         """
         return self.request_validator
 
-    def get_session_manager(self) -> McpSessionManager:
+    def get_session_policy(self) -> ClientSessionPolicy:
         """
-        Get the MCP session manager for this context.
-        :return: The session manager
+        Get the MCP session policy for this context.
+        :return: The session policy instance
         """
-        return self.session_manager
+        return self.session_policy
