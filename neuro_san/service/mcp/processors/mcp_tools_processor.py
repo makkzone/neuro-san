@@ -157,6 +157,7 @@ class McpToolsProcessor:
         Build MCP tool call result dictionary from given text and structure parts.
         :param request_id: MCP request id;
         :param result_text: tool call result text part;
+        :param result_sly_data: tool call result sly_data part;
         :param result_structure: tool call result structure part;
         :return: json dictionary with tool call result in MCP format;
         """
@@ -175,6 +176,7 @@ class McpToolsProcessor:
         }
         # Construct actual tool call result:
         if result_structure is not None:
+            call_result["result"]["structuredContent"] = {}
             call_result["result"]["structuredContent"]["result"] = result_structure
             # For backward compatibility, also add text version of structure:
             structure_str: str = f"```json\n{json.dumps(result_structure, indent=2)}\n```"
@@ -216,7 +218,7 @@ class McpToolsProcessor:
         }
 
     async def _extract_tool_response_part(
-            self, response_dict: Dict[str, Any]) -> Tuple[str, Dict[str, Any], Dict[Dict[str, Any]]]:
+            self, response_dict: Dict[str, Any]) -> Tuple[str, Dict[str, Any], Dict[str, Any]]:
         """
         Extract tool response part from the given streaming chat response dictionary.
         :param response_dict: streaming chat response dictionary;
