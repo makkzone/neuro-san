@@ -14,9 +14,11 @@
 # limitations under the License.
 #
 # END COPYRIGHT
+import time
 from typing import Any
 from typing import Dict
 
+import datetime
 from logging import getLogger
 from logging import Logger
 
@@ -77,6 +79,15 @@ class RegistryStorageUpdater(AbstractStorageUpdater):
                          self.manifest_path, self.update_period_in_seconds)
         self.observer.start()
 
+    def log_next_update_time(self):
+        """
+        Log the time for next manifest file update check
+        """
+        # Log the NEXT update time
+        next_time = time.time() + self.get_update_period_in_seconds()
+        next_time_fmt: str = datetime.datetime.fromtimestamp(next_time).isoformat()
+        self.logger.info("Next time manifest will be checked for updates: %s", next_time_fmt)
+
     def update_storage(self):
         """
         Perform an update.
@@ -87,6 +98,7 @@ class RegistryStorageUpdater(AbstractStorageUpdater):
         modified, added, deleted = self.observer.reset_event_counters()
 
         if modified == added == deleted == 0:
+            self.log_next_update_time()
             # Nothing happened - go on observing
             return
 
@@ -100,3 +112,5 @@ class RegistryStorageUpdater(AbstractStorageUpdater):
         for storage_type in ["public", "protected"]:
             storage: AgentNetworkStorage = self.network_storage_dict.get(storage_type)
             storage.setup_agent_networks(agent_networks.get(storage_type))
+
+        self.log_next_update_time()
