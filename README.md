@@ -40,6 +40,7 @@ Neuro SAN also offers:
     * data-driven test cases
     * the ability for LLMs to test your agent networks
     * an Assessor app which classifies the modes of failure for your agents, given a data-driven test case
+* MCP protocol API
 
 ## Running client and server
 
@@ -273,3 +274,7 @@ look like this:
 ## Creating Clients
 
 To create clients, follow the [instructions](docs/clients.md) here.
+
+## Using neuro-san MCP protocol API
+
+To use neuro-san as an MCP server, see details in [mcp](docs/mcp_service.md)
