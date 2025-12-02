@@ -59,6 +59,15 @@ This is useful for when your agent network is called as an external agent by ano
 but is considered an implementation detail for that network and is not intended for generic
 discovery.
 
+##### mcp
+
+The value for the "mcp" key is a boolean.
+This says whether or not the agent should be exposed through MCP protocol API
+as an MCP tool. In this case, it will be listed by an MCP "tools/list" command.
+
+A true value implies that the network will be available as an MCP tool.
+Note that a true value specified for "mcp" key will implicitly set "public" key also to true.
+
 ## Server monitoring of agent description files
 
 It is possible for the server infrastructure to detect changes to the agent manifest.hocon and any agent network
