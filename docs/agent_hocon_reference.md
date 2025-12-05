@@ -43,7 +43,7 @@ Items in ***bold*** are essentials. Try to understand these first.
 - [Single Agent Specification](#single-agent-specification)
     - [***name*** - the name of the agent so that other agents can reference it](#name)
     - [***function*** - specifies what the agent can do/needs as input to clients or other agents](#function)
-        - [***description*** - description of what the agent can do](#description-1)
+        - [***description*** - description of what the agent can do for both agents and clients](#description-1)
         - [***parameters*** - schema for agent input](#parameters)
             - [type](#type)
             - [properties](#properties)
