@@ -20,7 +20,7 @@ Items in ***bold*** are essentials. Try to understand these first.
 
 - [Top-Level Agent Network Specifications](#top-level-agent-network-specifications)
     - [***llm_config*** - configuration for default LLM to use](#llm_config)
-        - [***model_name*** - specifies the name of the LLM to use](#model_name)
+        - [***model_name*** - specifies the name of the default LLM to use](#model_name)
         - [class](#class)
         - [fallbacks](#fallbacks)
         - [temperature](#temperature)
