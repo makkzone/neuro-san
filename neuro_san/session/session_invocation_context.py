@@ -213,4 +213,8 @@ class SessionInvocationContext(InvocationContext):
         # with direct sessions.
         invocation_context.queue: AsyncCollatingQueue = AsyncCollatingQueue()
 
+        # We need a different journal in order for direct sessions to call external agents
+        # with direct sessions.
+        invocation_context.journal: Journal = MessageJournal(invocation_context.queue)
+
         return invocation_context
