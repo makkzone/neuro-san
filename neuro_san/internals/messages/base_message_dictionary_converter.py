@@ -29,6 +29,7 @@ from leaf_common.serialization.interface.dictionary_converter import DictionaryC
 
 from neuro_san.internals.messages.agent_message import AgentMessage
 from neuro_san.internals.messages.agent_framework_message import AgentFrameworkMessage
+from neuro_san.internals.messages.agent_progress_message import AgentProgressMessage
 from neuro_san.internals.messages.agent_tool_result_message import AgentToolResultMessage
 from neuro_san.internals.messages.chat_message_type import ChatMessageType
 
@@ -155,6 +156,9 @@ class BaseMessageDictionaryConverter(DictionaryConverter):
             elif chat_message_type == ChatMessageType.AGENT_FRAMEWORK:
                 # Don't bother passing on chat_context
                 base_message = AgentFrameworkMessage(content=chat_message.get("text", ""))
+            elif chat_message_type == ChatMessageType.AGENT_PROGRESS:
+                base_message = AgentProgressMessage(content=chat_message.get("text", ""),
+                                                    structure=chat_message.get("structure"))
 
         # Any other message type we do not want to send to any agent as chat history.
 
@@ -167,7 +171,7 @@ class BaseMessageDictionaryConverter(DictionaryConverter):
         :return: True if the BaseMessage type is relevant to chat history (include).
                  False otherwise (do not include).
         """
-        if isinstance(base_message, (AgentMessage, AgentFrameworkMessage, ToolMessage)):
+        if isinstance(base_message, (AgentMessage, AgentFrameworkMessage, ToolMessage, AgentProgressMessage)):
             # These guys cannot be in chat history as langchain will not recognize them.
             return False
         return True
