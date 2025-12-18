@@ -23,6 +23,8 @@ from typing import Set
 from logging import getLogger
 from logging import Logger
 
+from leaf_common.parsers.dictionary_extractor import DictionaryExtractor
+
 from neuro_san.internals.validation.network.abstract_network_validator import AbstractNetworkValidator
 
 
@@ -148,7 +150,15 @@ class UnreachableNodesNetworkValidator(AbstractNetworkValidator):
         reachable_agents.add(agent)
 
         # Step 4: Get all child agents (down_chains) of current agent
-        down_chains: List[str] = name_to_spec.get(agent, {}).get("tools", [])
+        empty: Dict[str, Any] = {}
+        no_tools: List[str] = []
+
+        agent_spec: Dict[str, Any] = name_to_spec.get(agent, empty)
+        extractor = DictionaryExtractor(agent_spec)
+
+        traditional_down_chains: List[str] = extractor.get("tools", no_tools)
+        coded_tool_down_chains: List[str] = list(extractor.get("args.tools", empty).values())
+        down_chains: List[str] = traditional_down_chains + coded_tool_down_chains
         safe_down_chains: List[str] = self.remove_dictionary_tools(down_chains)
 
         # Step 5: Recursively visit each child agent to continue the traversal

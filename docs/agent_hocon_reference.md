@@ -58,6 +58,7 @@ Items in ***bold*** are essentials. Try to understand these first.
     - [command](#command)
     - [toolbox](#toolbox)
     - [args](#args)
+        - [tools](#tools-args)
     - [allow](#allow)
         - [connectivity](#connectivity)
         - [to_downstream](#to_downstream)
@@ -622,6 +623,14 @@ Args is an optional dictionary for agents representing CodedTools to pass other
 key/value pairs when the agent is invoked.  This allows for greater code sharing
 for a single CodedTool implementation when it is referenced by multiple agents
 and called in multiple contexts. It can also be used to supply or override arguments of Langchain tools defined in the [toolbox](#toolbox).
+
+#### tools (args)
+
+CodedTools are allowed to call out to other tools programmatically when they also derive from the BranchActivation
+class within neuro-san. In order to allow for discovery of these connections to other agents by validation processes
+and Connectivity() calls, by convention we expect a tools dictionary to be specified in the args for the tool that
+defines which agents _might_ be called.  The keys can be any string you want, and the values are tools that
+can be called as a result of the CodedTool being invoked.
 
 ### allow
 
