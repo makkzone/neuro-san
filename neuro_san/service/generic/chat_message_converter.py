@@ -16,8 +16,7 @@
 # END COPYRIGHT
 from typing import Any
 from typing import Dict
-
-import copy
+from enum import Enum
 
 from leaf_common.serialization.interface.dictionary_converter import DictionaryConverter
 
@@ -34,7 +33,7 @@ class ChatMessageConverter(DictionaryConverter):
         :param obj: The object (chat response) to be converted into a dictionary
         :return: chat response dictionary in format expected by clients
         """
-        response_dict = copy.deepcopy(obj)
+        response_dict = self.to_json_safe(obj)
         self.convert(response_dict)
         return response_dict
 
@@ -73,3 +72,38 @@ class ChatMessageConverter(DictionaryConverter):
                 to return None.
         """
         raise NotImplementedError
+
+    JSON_PRIMITIVES = (str, int, float, bool, type(None))
+    SKIP_TYPES = (ChatMessageType,)
+
+    def to_json_safe(self, obj: Any):
+        """
+        Recursively convert obj into a JSON-serializable structure.
+        Don't touch the values of SKIP_TYPES.
+        Non-serializable values are replaced with None.
+        """
+        # Fast path: JSON primitives or types we need to skip:
+        if isinstance(obj, (self.SKIP_TYPES, self.JSON_PRIMITIVES)):
+            return obj
+
+        # Enums → their value (or None if value is not primitive)
+        if isinstance(obj, Enum):
+            if isinstance(obj.value, self.JSON_PRIMITIVES):
+                return obj.value
+            return None
+
+        # Dict → keys must be strings, values recursively processed
+        if isinstance(obj, dict):
+            safe_dict = {}
+            for k, v in obj.items():
+                if isinstance(k, str):
+                    safe_dict[k] = self.to_json_safe(v)
+                # Non-string keys are dropped
+            return safe_dict
+
+        # List / tuple → list
+        if isinstance(obj, (list, tuple)):
+            return [self.to_json_safe(v) for v in obj]
+
+        # Everything else → None
+        return None
