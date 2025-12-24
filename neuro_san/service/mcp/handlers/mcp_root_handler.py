@@ -184,7 +184,6 @@ class McpRootHandler(BaseRequestHandler):
                     self.set_status(HTTPStatus.BAD_REQUEST)
                     self.write(error_msg)
                     self.logger.error(self.get_metadata(), f"Error: Invalid tool call request: {extra_error}")
-                    self.do_finish()
                     return
 
                 print(f"########################### call_args: {call_args}")
