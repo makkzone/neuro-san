@@ -42,7 +42,6 @@ class McpServerContext:
         self.protocol_schema = None
         self.session_policy = None
         self.request_validator = None
-        self.tool_call_validator = None
         self.enabled: bool = False
 
     def set_enabled(self, enabled: bool) -> None:

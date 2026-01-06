@@ -42,10 +42,12 @@ class ToolRequestValidator(DictionaryValidator):
         self.required_property = "user_message"
         # Generate the validation schema for tool call requests
         # from the overall neuro-san service schema:
-        self.validation_schema = self._extract_sub_schema(
+        self.request_schema = self._extract_sub_schema(
             service_schema,
             self.tool_request_method,
             self.required_property)
+
+        print(f"Tool request validation schema initialized: {self.request_schema}")
 
     def validate(self, candidate: Dict[str, Any]) -> List[str]:
         """
@@ -54,7 +56,7 @@ class ToolRequestValidator(DictionaryValidator):
         :return: A list of error messages, if any
         """
         try:
-            jsonschema.validate(instance=candidate, schema=self.validation_schema)
+            jsonschema.validate(instance=candidate, schema=self.request_schema)
         except jsonschema.exceptions.ValidationError:
             # We don't return detailed validation errors to a client,
             # since they tend to be very long and complex.
@@ -62,6 +64,12 @@ class ToolRequestValidator(DictionaryValidator):
         except Exception as exc:  # pylint: disable=broad-exception-caught
             return [f"Validation exception: {str(exc)}"]
         return None
+
+    def get_request_schema(self) -> Dict[str, Any]:
+        """
+        :return: The tool request validation schema
+        """
+        return self.request_schema
 
     def _get_schema_defs(self, schema: Dict[str, Any]) -> Set[str]:
         """

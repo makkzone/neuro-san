@@ -65,6 +65,9 @@ class McpRootHandler(BaseRequestHandler):
         #     of a particular grouping.
         self.network_storage_dict: Dict[str, AgentNetworkStorage] = self.server_context.get_network_storage_dict()
 
+        # For tool requests, we need to validate tool call arguments:
+        self.tool_request_validator: ToolRequestValidator = ToolRequestValidator(self.openapi_service_spec)
+
         self.set_header("Access-Control-Allow-Origin", "*")
         self.set_header("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
         headers: str = "Content-Type, Transfer-Encoding"
@@ -161,7 +164,8 @@ class McpRootHandler(BaseRequestHandler):
                     McpToolsProcessor(
                         self.logger,
                         self.network_storage_dict,
-                        self.agent_policy)
+                        self.agent_policy,
+                        self.tool_request_validator)
                 result_dict: Dict[str, Any] = await tools_processor.list_tools(request_id, metadata)
                 self.set_status(HTTPStatus.OK)
                 self.write(result_dict)
@@ -170,13 +174,13 @@ class McpRootHandler(BaseRequestHandler):
                     McpToolsProcessor(
                         self.logger,
                         self.network_storage_dict,
-                        self.agent_policy)
+                        self.agent_policy,
+                        self.tool_request_validator)
                 call_params: Dict[str, Any] = data.get("params", {})
                 tool_name: str = call_params.get("name")
                 call_args: Dict[str, Any] = call_params.get("arguments", {})
                 # Validate tool arguments:
-                tool_validator: DictionaryValidator = ToolRequestValidator(self.openapi_service_spec)
-                validation_errors = tool_validator.validate(call_args)
+                validation_errors = self.tool_request_validator.validate(call_args)
                 if validation_errors:
                     extra_error: str = "; ".join(validation_errors)
                     error_msg: Dict[str, Any] = \
@@ -185,8 +189,6 @@ class McpRootHandler(BaseRequestHandler):
                     self.write(error_msg)
                     self.logger.error(self.get_metadata(), f"Error: Invalid tool call request: {extra_error}")
                     return
-
-                print(f"########################### call_args: {call_args}")
 
                 prompt: str = call_args.get("user_message", {})
                 chat_context: str = call_args.get("chat_context", None)
