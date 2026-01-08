@@ -215,6 +215,9 @@ class ServerMainLoop:
             "temporary_network_update_period_seconds": args.temporary_network_update_period_seconds
         }
 
+        import json
+        networks = list(manifest_agent_networks.get("public").keys())
+        print(f"Manifest Agent Networks: {json.dumps(networks, indent=4, sort_keys=True)}")
         self.agent_networks = manifest_agent_networks
 
     def _get_default_openapi_spec_path(self) -> str:
