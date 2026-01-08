@@ -98,10 +98,7 @@ class RegistryManifestRestorer(Restorer):
         for manifest_file in file_references:
             agents_from_one_manifest: Dict[str, Dict[str, AgentNetwork]] = self.restore_one_manifest(manifest_file)
             # Do a deep update() with the overlayer.
-            print(f"agents from {manifest_file}: {agents_from_one_manifest}")
             all_agent_networks = overlayer.overlay(all_agent_networks, agents_from_one_manifest)
-
-        print(f"all_agent_networks: {all_agent_networks}")
 
         # Loop through the agent networks dictionary removing any references to None values
         # for networks. This indicates they should not be served.
@@ -119,8 +116,6 @@ class RegistryManifestRestorer(Restorer):
         :param manifest_file: The file reference to use when restoring.
         :return: a nested map of storage type -> (mapping of name -> agent networks)
         """
-
-        print(f"Restoring from manifest file: {manifest_file}")
 
         agent_networks: Dict[str, Dict[str, AgentNetwork]] = {
             "public": {},
@@ -189,8 +184,6 @@ class RegistryManifestRestorer(Restorer):
         :param manifest_key: the key to use when restoring
         :return: a built map of agent networks
         """
-
-        print(f"Restoring agent network: {agent_filepath}")
 
         agent_network: AgentNetwork = None
         registry_restorer = AgentNetworkRestorer(registry_dir=manifest_dir, agent_mapper=self.agent_mapper)
