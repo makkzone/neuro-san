@@ -86,7 +86,7 @@ class RegistryStorageUpdater(AbstractStorageUpdater):
         # Log the NEXT update time
         next_time = time.time() + self.get_update_period_in_seconds()
         next_time_fmt: str = datetime.datetime.fromtimestamp(next_time).isoformat()
-        self.logger.info("Next time manifest will be checked for updates: %s", next_time_fmt)
+        self.logger.debug("Next time manifest will be checked for updates: %s", next_time_fmt)
 
     def update_storage(self):
         """
@@ -107,7 +107,7 @@ class RegistryStorageUpdater(AbstractStorageUpdater):
                          modified, added, deleted)
         self.logger.info("Updating manifest file: %s", self.manifest_path)
 
-        agent_networks: Dict[str, Dict[str, AgentNetwork]] = RegistryManifestRestorer().restore(self.manifest_path)
+        agent_networks: Dict[str, Dict[str, AgentNetwork]] = RegistryManifestRestorer(self.manifest_path).restore()
 
         for storage_type in ["public", "protected"]:
             storage: AgentNetworkStorage = self.network_storage_dict.get(storage_type)

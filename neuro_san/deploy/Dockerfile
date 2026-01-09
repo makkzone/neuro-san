@@ -121,7 +121,10 @@ ARG NEURO_SAN_VERSION
 #
 
 # Where to find the tool registry manifest file which lists all the agent hocon
-# files to serve up from this server instance.
+# files to serve up from this server instance.  To specify multiple manifest files,
+# simply use a space-separated list of manifest files.  Manifest dictionaries will
+# effectively be merged, where content coming from manifests later in the list
+# have precedence.
 ENV AGENT_MANIFEST_FILE=${APP_SOURCE}/registries/manifest.hocon
 
 # An llm_info hocon file with user-provided llm descriptions that are to be used
@@ -278,5 +281,5 @@ ENV AGENT_MCP_ENABLE="true"
 ENV AGENT_MCP_ONLY="false"
 # When set, this parameter will only enable MCP service protocol for running neuro-san server,
 # while disabling neuro-san own http API.
- 
+
 ENTRYPOINT "${APP_ENTRYPOINT}"

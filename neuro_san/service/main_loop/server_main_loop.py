@@ -210,7 +210,7 @@ class ServerMainLoop:
         manifest_files: List[str] = manifest_restorer.get_manifest_files()
 
         self.watcher_config = {
-            "manifest_path": manifest_files[0],    # For now, only one
+            "manifest_path": manifest_files,
             "manifest_update_period_seconds": args.manifest_update_period_seconds,
             "temporary_network_update_period_seconds": args.temporary_network_update_period_seconds
         }
