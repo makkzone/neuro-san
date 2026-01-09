@@ -528,7 +528,6 @@ MCP servers can be configured in two formats:
     ```json
     "tools": ["https://example.com/mcp"]
     ```
-
     > Tool filtering is not available with string reference format unless using environment variable
     `MCP_SERVERS_INFO_FILE` (see Authentication section below).
 
@@ -542,7 +541,6 @@ MCP servers can be configured in two formats:
         }
     ]
     ```
-
     > `tools` key filters which specific tools from the MCP server are made available.
     If omitted, all tools on the server will be accessible.
 
@@ -552,7 +550,7 @@ MCP tools can be authenticated using the following methods:
 
 - `http_headers` field in `sly_data`. The required fields depend on the authentication scheme expected by each MCP
 server. Users may specify different authorization credentials for different MCP URLs.
-    
+
     Example:
 
     ```json
