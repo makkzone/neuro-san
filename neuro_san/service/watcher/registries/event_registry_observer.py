@@ -33,6 +33,8 @@ class EventRegistryObserver(RegistryObserver):
     """
 
     def __init__(self, manifest_path: str):
+        # DEF - not doing multiple manifests yet cuz this path is not active.
+        # See Polling version if we ever need to go there.
         self.manifest_path: str = str(Path(manifest_path).resolve())
         self.registry_path: str = str(Path(self.manifest_path).parent)
         self.logger = logging.getLogger(self.__class__.__name__)
