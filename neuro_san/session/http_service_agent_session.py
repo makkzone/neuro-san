@@ -94,6 +94,9 @@ class HttpServiceAgentSession(AbstractHttpServiceAgentSession, AgentSession):
                 for line in response.iter_lines(decode_unicode=True):
                     if line.strip():  # Skip empty lines
                         result_dict = json.loads(line)
+
+                        print(f"HTTP >>>>>>>>>>>>>>>>> Received chunk: {result_dict}")
+
                         yield result_dict
         except Exception as exc:  # pylint: disable=broad-exception-caught
             raise ValueError(self.help_message(path)) from exc

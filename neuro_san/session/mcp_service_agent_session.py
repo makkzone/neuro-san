@@ -28,6 +28,10 @@ from leaf_common.time.timeout import Timeout
 from neuro_san.interfaces.agent_session import AgentSession
 from neuro_san.session.abstract_http_service_agent_session import AbstractHttpServiceAgentSession
 
+# MCP protocol version required by this MCP session
+# Protocol specification is available at:
+# https://modelcontextprotocol.io/specification/2025-06-18
+MCP_VERSION: str = "2025-06-18"
 
 class McpServiceAgentSession(AbstractHttpServiceAgentSession, AgentSession):
     """
@@ -77,7 +81,7 @@ class McpServiceAgentSession(AbstractHttpServiceAgentSession, AgentSession):
             "id":1,
             "method":"initialize",
             "params": {
-                "protocolVersion": "2025-06-18",
+                "protocolVersion": MCP_VERSION,
                 "capabilities": {
                     "roots": {
                         "listChanged": False
@@ -98,7 +102,7 @@ class McpServiceAgentSession(AbstractHttpServiceAgentSession, AgentSession):
         path: str = self.get_request_path("initialize")
         try:
             response = requests.post(path, json=handshake_dict, headers=headers, timeout=self.timeout_in_seconds)
-            #response.raise_for_status()
+            response.raise_for_status()
             response_dict = json.loads(response.text)
         except Exception as exc:  # pylint: disable=broad-exception-caught
             raise ValueError(self.help_message(path)) from exc
@@ -106,10 +110,10 @@ class McpServiceAgentSession(AbstractHttpServiceAgentSession, AgentSession):
         print(f"Handshake response: {response_dict}")
 
         # Extract the protocol version from the handshake response
-        self.protocol_version: str = response_dict["result"]["protocolVersion"]
+        self.protocol_version: str = response_dict.get("result", {}).get("protocolVersion", None)
 
         # Confirm the protocol version is supported by this client
-        if self.protocol_version not in ["2025-06-18"]:
+        if self.protocol_version not in [MCP_VERSION]:
             raise ValueError(f"Unsupported protocol version: {self.protocol_version}")
 
         # Acknowledge the successful handshake
@@ -122,11 +126,6 @@ class McpServiceAgentSession(AbstractHttpServiceAgentSession, AgentSession):
             response.raise_for_status()
         except Exception as exc:  # pylint: disable=broad-exception-caught
             raise ValueError(self.help_message(path)) from exc
-
-
-
-
-
 
     def function(self, request_dict: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -157,7 +156,7 @@ class McpServiceAgentSession(AbstractHttpServiceAgentSession, AgentSession):
         except Exception as exc:  # pylint: disable=broad-exception-caught
             raise ValueError(self.help_message(path)) from exc
 
-        tools_list: List[Dict[str, Any]] = response_dict["result"]["tools"]
+        tools_list: List[Dict[str, Any]] = response_dict.get("result", {}).get("tools", [])
         for tool in tools_list:
             name: str = tool.get("name", None)
             if name == self.agent_name:
@@ -168,27 +167,14 @@ class McpServiceAgentSession(AbstractHttpServiceAgentSession, AgentSession):
                     }
         return None
 
-
-
     def connectivity(self, request_dict: Dict[str, Any]) -> Dict[str, Any]:
         """
-        :param request_dict: A dictionary version of the ConnectivityRequest
-                    protobufs structure. Has the following keys:
-                        <None>
-        :return: A dictionary version of the ConnectivityResponse
-                    protobufs structure. Has the following keys:
-                "connectivity_info" - the list of connectivity descriptions for
-                                    each node in the agent network the service
-                                    wants the client ot know about.
+        :param request_dict: A dictionary version of the ConnectivityRequest.
+        :return: A dictionary version of the ConnectivityResponse.
         """
-        path: str = self.get_request_path("connectivity")
-        try:
-            response = requests.get(path, json=request_dict, headers=self.get_headers(),
-                                    timeout=self.timeout_in_seconds)
-            result_dict = json.loads(response.text)
-            return result_dict
-        except Exception as exc:  # pylint: disable=broad-exception-caught
-            raise ValueError(self.help_message(path)) from exc
+        # Not used in MCP protocol; return empty connectivity info
+        request_dict: Dict[str, Any] = {}
+        return request_dict
 
     def streaming_chat(self, request_dict: Dict[str, Any]) -> Generator[Dict[str, Any], None, None]:
         """
@@ -204,16 +190,39 @@ class McpServiceAgentSession(AbstractHttpServiceAgentSession, AgentSession):
             Note that responses to the chat input might be numerous and will come as they
             are produced until the system decides there are no more messages to be sent.
         """
+
+        req_str: str = json.dumps(request_dict, indent=4)
+        print(f"Request string: {req_str}")
+
+        request_dict["user_message"]["type"] = "HUMAN"
+
+        # Pack the chat request dictionary into an MCP method call format:
+        mcp_payload = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/call",
+            "params": {
+                "name": self.agent_name,
+                "arguments": request_dict,
+            },
+        }
+
+        headers: Dict[str, str] = self.get_headers()
+        headers["Content-Type"] = "application/json"
+        headers[self.MCP_PROTOCOL_VERSION] = self.protocol_version
+
         path: str = self.get_request_path("streaming_chat")
+        result: Dict[str, Any] = None
         try:
-            with requests.post(path, json=request_dict, headers=self.get_headers(),
-                               stream=True,
+            with requests.post(path, json=mcp_payload, headers=headers,
                                timeout=self.streaming_timeout_in_seconds) as response:
                 response.raise_for_status()
-
                 for line in response.iter_lines(decode_unicode=True):
                     if line.strip():  # Skip empty lines
                         result_dict = json.loads(line)
+
+                        print(f"MCP >>>>>>>>>>>>>>>>> Received chunk: {result_dict}")
+
                         yield result_dict
         except Exception as exc:  # pylint: disable=broad-exception-caught
             raise ValueError(self.help_message(path)) from exc
