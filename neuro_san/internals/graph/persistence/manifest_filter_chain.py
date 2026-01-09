@@ -38,4 +38,4 @@ class ManifestFilterChain(ConfigFilterChain):
         # Order matters
         self.register(ManifestKeyConfigFilter(manifest_file))
         self.register(ManifestDictConfigFilter(manifest_file))
-        self.register(ServedManifestConfigFilter(manifest_file))
+        self.register(ServedManifestConfigFilter(manifest_file, warn_on_skip=True, entry_for_skipped=True))

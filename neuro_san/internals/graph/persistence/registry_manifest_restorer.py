@@ -28,9 +28,10 @@ from json.decoder import JSONDecodeError
 from pyparsing.exceptions import ParseException
 from pyparsing.exceptions import ParseSyntaxException
 
+from leaf_common.config.config_filter import ConfigFilter
+from leaf_common.config.dictionary_overlay import DictionaryOverlay
 from leaf_common.config.file_of_class import FileOfClass
 from leaf_common.persistence.interface.restorer import Restorer
-from leaf_common.config.dictionary_overlay import DictionaryOverlay
 
 from neuro_san import REGISTRIES_DIR
 from neuro_san.internals.interfaces.agent_name_mapper import AgentNameMapper
@@ -38,6 +39,7 @@ from neuro_san.internals.graph.persistence.agent_filetree_mapper import AgentFil
 from neuro_san.internals.graph.persistence.agent_network_restorer import AgentNetworkRestorer
 from neuro_san.internals.graph.persistence.manifest_filter_chain import ManifestFilterChain
 from neuro_san.internals.graph.persistence.raw_manifest_restorer import RawManifestRestorer
+from neuro_san.internals.graph.persistence.served_manifest_config_filter import ServedManifestConfigFilter
 from neuro_san.internals.graph.registry.agent_network import AgentNetwork
 from neuro_san.internals.validation.network.manifest_network_validator import ManifestNetworkValidator
 
@@ -69,13 +71,15 @@ class RegistryManifestRestorer(Restorer):
             # We have no manifest list coming in, so check an env variable for a definition.
             manifest_file: str = os.environ.get("AGENT_MANIFEST_FILE")
             if manifest_file is None:
-                # No env var, so fallback to whatis coded in this repo.
+                # No env var, so fallback to what is coded in this repo.
                 manifest_file = REGISTRIES_DIR.get_file_in_basis("manifest.hocon")
 
             # Add what was found above
-            self.manifest_files.append(manifest_file)
+            use_files: List[str] = manifest_file.split(" ")
+            self.manifest_files.extend(use_files)
         elif isinstance(manifest_files, str):
-            self.manifest_files.append(manifest_files)
+            use_files: List[str] = manifest_files.split(" ")
+            self.manifest_files.extend(use_files)
         else:
             self.manifest_files = manifest_files
 
@@ -95,6 +99,14 @@ class RegistryManifestRestorer(Restorer):
             agents_from_one_manifest: Dict[str, Dict[str, AgentNetwork]] = self.restore_one_manifest(manifest_file)
             # Do a deep update() with the overlayer.
             all_agent_networks = overlayer.overlay(all_agent_networks, agents_from_one_manifest)
+
+        # Loop through the agent networks dictionary removing any references to None values
+        # for networks. This indicates they should not be served.
+        config_filter: ConfigFilter = ServedManifestConfigFilter(manifest_file=None,
+                                                                 warn_on_skip=False,
+                                                                 entry_for_skipped=False)
+        for storage_type, storage_dict in all_agent_networks.items():
+            all_agent_networks[storage_type] = config_filter.filter_config(storage_dict)
 
         return all_agent_networks
 
@@ -128,9 +140,13 @@ class RegistryManifestRestorer(Restorer):
         # At this point only hocon files we are going to serve up are in the one_manifest.
         for manifest_key, manifest_dict in one_manifest.items():
 
+            usable_network: bool = isinstance(manifest_dict, dict) and manifest_dict.get("serve", False)
+
             # We'll need to use an agent mapper to get to this agent definition file.
             agent_filepath: str = self.agent_mapper.agent_name_to_filepath(manifest_key)
-            agent_network: AgentNetwork = self.restore_one_agent_network(manifest_dir, agent_filepath, manifest_key)
+            agent_network: AgentNetwork = None
+            if usable_network:
+                agent_network = self.restore_one_agent_network(manifest_dir, agent_filepath, manifest_key)
 
             if agent_network is not None:
 
@@ -142,14 +158,14 @@ class RegistryManifestRestorer(Restorer):
                     agent_network = None
                     continue
 
-            if agent_network is None:
+            if usable_network and agent_network is None:
                 self.logger.error("manifest registry %s not found in %s", manifest_key, manifest_file)
                 continue
 
             network_name: str = self.agent_mapper.filepath_to_agent_network_name(agent_filepath)
 
             # Check if this agent network has been declared as MCP tool:
-            if manifest_dict.get("mcp", False):
+            if usable_network and manifest_dict.get("mcp", False):
                 agent_network.set_as_mcp_tool()
 
             # Figure out where we want to put the network per the network's manifest dictionary
