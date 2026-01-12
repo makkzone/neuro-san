@@ -53,6 +53,7 @@ Items in ***bold*** are essentials. Try to understand these first.
     - [***tools*** - list of other agents/tools that this agent may access](#tools-agents)
         - [External Agents](#external-agents)
         - [MCP Servers](#mcp-servers)
+            - [Authentication](#authentication)
     - [***class*** - Python class name to invoke for Coded Tools](#class-1)
     - [***llm_config*** - agent-specific LLM configuration](#llm_config-1)
     - [command](#command)
@@ -517,33 +518,76 @@ This enables entire ecosystems of agent webs.
 
 #### MCP Servers
 
-Agents can also call tools exposed by external Model Context Protocol (MCP) servers.
-This can be configured in two forms:
+Agents can call tools exposed by external Model Context Protocol (MCP) servers.
+MCP server URLs must either start with `https://mcp` or end with `/mcp`.
+
+MCP servers can be configured in two formats:
 
 - string reference
 
-```json
-"tools": ["https://example.com/mcp"]
-```
+    ```json
+    "tools": ["https://example.com/mcp"]
+    ```
+
+    - Tool filtering is not available with string reference format unless using environment variable
+    `MCP_SERVERS_INFO_FILE` (see Authentication section below).
 
 - dictionary reference
 
-Example:
+    ```json
+    "tools": [
+        {
+            "url": "https://example.com/mcp",
+            "tools": ["tool_1"]
+        }
+    ]
+    ```
 
-```json
-"tools": [
+    - `tools` key filters which specific tools from the MCP server are made available.
+    If omitted, all tools on the server will be accessible.
+
+##### Authentication
+
+MCP tools can be authenticated using the following methods:
+
+- `http_headers` field in `sly_data`. The required fields depend on the authentication scheme expected by each MCP
+server. Users may specify different authorization credentials for different MCP URLs.
+
+    Example:
+
+    ```json
     {
-        "url": "https://example.com/mcp",
-        "tools": ["tool_1"]
+        "http_headers": {
+            "<MCP_URL_1>": {      
+                "Authorization": "Bearer <token_value>"
+            },
+            "<MCP_URL_2>": {
+                "client_id": "<client_id_value>",
+                "client_secret": "<client_secret_value>"
+            }
+        }
     }
-]
-```
+    ```
 
-Here, the `tools` key filters which specific tools from the MCP server are made available.
-If omitted, all tools on the server will be accessible.
+- Set the `MCP_SERVERS_INFO_FILE` environment variable to point to a HOCON file containing MCP server configurations:
 
-> Note: Authentication for MCP servers is not currently supported.
-Authorization and security mechanisms are planned for future releases.
+    ```json
+    {
+        "mcp_server_url_1": {
+            "http_headers": {
+                "Authorization": "Bearer <token>",
+            }, 
+            "tools": ["tool_1", "tool_2"]
+        },
+    }
+    ```
+
+    - Server URLs must match those in the agent network HOCON file
+
+    - If the headers exist in both `sly_data` and the configuration file for the same server,
+    `sly_data` takes precedence
+
+    - Tool filtering from the configuration file is used only if no tool filtering exists in the agent network HOCON
 
 <!--- pyml disable-next-line no-duplicate-heading -->
 ### llm_config

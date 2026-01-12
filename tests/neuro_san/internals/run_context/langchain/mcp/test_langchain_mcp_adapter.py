@@ -45,9 +45,9 @@ class TestLangChainMcpAdapter:
     def reset_class_state(self):
         """Reset class-level state before and after each test"""
         # pylint: disable=protected-access
-        LangChainMcpAdapter._mcp_clients_info = None
+        LangChainMcpAdapter._mcp_servers_info = None
         yield
-        LangChainMcpAdapter._mcp_clients_info = None
+        LangChainMcpAdapter._mcp_servers_info = None
 
     def test_init(self, adapter):
         """Test adapter initialization"""
@@ -96,7 +96,7 @@ class TestLangChainMcpAdapter:
         assert adapter.client_allowed_tools == allowed_tools
 
     @pytest.mark.asyncio
-    @patch('neuro_san.internals.run_context.langchain.mcp.langchain_mcp_adapter.McpClientsInfoRestorer')
+    @patch('neuro_san.internals.run_context.langchain.mcp.langchain_mcp_adapter.McpServersInfoRestorer')
     @patch('neuro_san.internals.run_context.langchain.mcp.langchain_mcp_adapter.MultiServerMCPClient')
     async def test_get_mcp_tools_with_config_allowed_tools(
         self, mock_client_class, mock_restorer_class, adapter
@@ -127,7 +127,7 @@ class TestLangChainMcpAdapter:
         assert tools[0].name == "config_tool"
 
     @pytest.mark.asyncio
-    @patch('neuro_san.internals.run_context.langchain.mcp.langchain_mcp_adapter.McpClientsInfoRestorer')
+    @patch('neuro_san.internals.run_context.langchain.mcp.langchain_mcp_adapter.McpServersInfoRestorer')
     @patch('neuro_san.internals.run_context.langchain.mcp.langchain_mcp_adapter.MultiServerMCPClient')
     async def test_get_mcp_tools_with_headers_param(
         self, mock_client_class, mock_restorer_class, adapter
@@ -149,7 +149,7 @@ class TestLangChainMcpAdapter:
         assert call_args["server"]["headers"]["Authorization"] == "Bearer custom_token"
 
     @pytest.mark.asyncio
-    @patch('neuro_san.internals.run_context.langchain.mcp.langchain_mcp_adapter.McpClientsInfoRestorer')
+    @patch('neuro_san.internals.run_context.langchain.mcp.langchain_mcp_adapter.McpServersInfoRestorer')
     @patch('neuro_san.internals.run_context.langchain.mcp.langchain_mcp_adapter.MultiServerMCPClient')
     async def test_get_mcp_tools_with_config_headers(
         self, mock_client_class, mock_restorer_class, adapter
@@ -159,7 +159,7 @@ class TestLangChainMcpAdapter:
         mock_restorer = mock_restorer_class.return_value
         mock_restorer.restore.return_value = {
             server_url: {
-                "headers": {"Authorization": "Bearer config_token"}
+                "http_headers": {"Authorization": "Bearer config_token"}
             }
         }
 
@@ -180,9 +180,9 @@ class TestLangChainMcpAdapter:
         """Test handling of invalid headers type in config"""
         # pylint: disable=protected-access
         server_url = "https://mcp.example.com/mcp"
-        LangChainMcpAdapter._mcp_clients_info = {
+        LangChainMcpAdapter._mcp_servers_info = {
             server_url: {
-                "headers": "invalid_string_not_dict"
+                "http_headers": "invalid_string_not_dict"
             }
         }
 
