@@ -79,7 +79,7 @@ class McpRootHandler(BaseRequestHandler):
 
     async def post(self):
         """
-        Implementation of top-level POST request handler for MCP call.
+        Implementation of the top-level POST request handler for MCP call.
         """
         # pylint: disable=too-many-locals
         # pylint: disable=too-many-branches

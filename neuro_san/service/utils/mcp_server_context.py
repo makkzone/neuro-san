@@ -24,11 +24,7 @@ from neuro_san.internals.interfaces.dictionary_validator import DictionaryValida
 from neuro_san.service.mcp.validation.mcp_request_validator import McpRequestValidator
 from neuro_san.service.mcp.interfaces.client_session_policy import ClientSessionPolicy
 from neuro_san.service.mcp.session.mcp_no_sessions_policy import McpNoSessionsPolicy
-
-# MCP protocol version supported by this service
-# Protocol specification is available at:
-# https://modelcontextprotocol.io/specification/2025-06-18
-MCP_VERSION: str = "2025-06-18"
+from neuro_san.service.mcp.util.mcp_request_util import McpRequestUtil
 
 
 class McpServerContext:
@@ -52,7 +48,7 @@ class McpServerContext:
         if not self.enabled and enabled:
             print(">>>>>>>>>>>> Enabling MCP service...")
             # MCP service is being enabled, set it up:
-            schema_name: str = f"service/mcp/validation/mcp-schema-{MCP_VERSION}.json"
+            schema_name: str = f"service/mcp/validation/mcp-schema-{McpRequestUtil.get_mcp_version()}.json"
             self.protocol_schema_filepath = TOP_LEVEL_DIR.get_file_in_basis(schema_name)
             try:
                 with open(self.protocol_schema_filepath, "r", encoding="utf-8") as schema_file:
@@ -77,7 +73,7 @@ class McpServerContext:
         Get the MCP protocol version supported by this service.
         :return: The MCP protocol version
         """
-        return MCP_VERSION
+        return McpRequestUtil.get_mcp_version()
 
     def get_request_validator(self) -> DictionaryValidator:
         """

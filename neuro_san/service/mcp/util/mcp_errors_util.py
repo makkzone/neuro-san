@@ -21,7 +21,7 @@ from typing import Any
 from typing import Dict
 
 from neuro_san.service.mcp.mcp_errors import McpError
-from neuro_san.service.mcp.util.requests_util import RequestsUtil
+from neuro_san.service.mcp.util.mcp_request_util import McpRequestUtil
 
 
 class McpErrorsUtil:
@@ -44,10 +44,10 @@ class McpErrorsUtil:
         return {
             "jsonrpc": "2.0",
             # Appease code scanning tools by escaping the id field:
-            "id": RequestsUtil.safe_request_id(request_id),
+            "id": McpRequestUtil.safe_request_id(request_id),
             "error": {
                 "code": error.num_value,
-                "message": RequestsUtil.safe_message(msg)
+                "message": McpRequestUtil.safe_message(msg)
             }
         }
 
@@ -62,12 +62,12 @@ class McpErrorsUtil:
         return {
             "jsonrpc": "2.0",
             # Appease code scanning tools by escaping the id field:
-            "id": RequestsUtil.safe_request_id(request_id),
+            "id": McpRequestUtil.safe_request_id(request_id),
             "result": {
                 "content": [
                     {
                         "type": "text",
-                        "text": RequestsUtil.safe_message(error_msg)
+                        "text": McpRequestUtil.safe_message(error_msg)
                     }
                 ],
                 "isError": True

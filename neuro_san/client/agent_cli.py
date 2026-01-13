@@ -283,6 +283,7 @@ Some suggestions:
 The type of connection to initiate. Choices are to connect to:
     "http"      - an agent service via HTTP. Needs host and port.
     "https"     - an agent service via secure HTTP. Needs host and port.
+    "mcp"       - an agent service via MCP protocol. Needs host and port.
     "direct"    - a session via library. (The default).
 All choices require an agent name.
 """)
@@ -294,6 +295,8 @@ All choices require an agent name.
                            help="Use a secure HTTP service connection. "
                                 "Requires your agent server to be set up with certificates that are well known. "
                                 "This is not something that our basic server setup supports out-of-the-box.")
+        group.add_argument("--mcp", dest="connection", action="store_const", const="mcp",
+                           help="Use an MCP protocol service connection.")
         group.add_argument("--timeout", dest="timeout", type=float,
                            help="Timeout in seconds before giving up on connecting to a server. "
                                 "By default this is None, implying we will try forever")

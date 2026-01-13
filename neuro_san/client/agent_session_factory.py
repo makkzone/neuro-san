@@ -22,6 +22,7 @@ from leaf_common.time.timeout import Timeout
 from neuro_san.client.direct_agent_session_factory import DirectAgentSessionFactory
 from neuro_san.interfaces.agent_session import AgentSession
 from neuro_san.session.http_service_agent_session import HttpServiceAgentSession
+from neuro_san.session.mcp_service_agent_session import McpServiceAgentSession
 
 
 # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -79,6 +80,16 @@ class AgentSessionFactory:
             session = HttpServiceAgentSession(host=hostname, port=use_port, agent_name=agent_name,
                                               security_cfg=security_cfg, metadata=metadata,
                                               timeout_in_seconds=connect_timeout_in_seconds)
+        elif session_type == "mcp":
+            # If there is no port really specified, use the default port
+            use_port = port
+            if port is None:
+                use_port = AgentSession.DEFAULT_PORT
+
+            security_cfg: Dict[str, Any] = None
+            session = McpServiceAgentSession(host=hostname, port=use_port, agent_name=agent_name,
+                                             security_cfg=security_cfg, metadata=metadata,
+                                             timeout_in_seconds=connect_timeout_in_seconds)
         else:
             # Incorrectly flagged as destination of Trust Boundary Violation 2
             #   Reason: This is the place where the session_type enforced-string argument is

@@ -14,16 +14,59 @@
 # limitations under the License.
 #
 # END COPYRIGHT
+"""
+See class comment for details
+"""
+from typing import Any
+from typing import Dict
+from typing import Union
 
 import html
 
-from typing import Union
+from neuro_san.session.mcp_service_agent_session import MCP_VERSION
 
 
-class RequestsUtil:
+class McpRequestUtil:
     """
-    Utility helper class for MCP requests processing.
+    Utility class for generating MCP protocol requests and responses.
     """
+
+    @classmethod
+    def get_mcp_version(cls) -> str:
+        """
+        Get the MCP protocol version supported by this service.
+        :return: MCP protocol version string.
+        """
+        return MCP_VERSION
+
+    @classmethod
+    def get_handshake_response(cls, request_id) -> Dict[str, Any]:
+        """
+        Generate a standard MCP handshake response.
+        :param request_id: MCP request id;
+        :return: json dictionary with handshake request in MCP format suitable for sending to a client.
+        """
+        return {
+            "jsonrpc": "2.0",
+            "id": McpRequestUtil.safe_request_id(request_id),
+            "result": {
+                "protocolVersion": MCP_VERSION,
+                "capabilities": {
+                    "logging": {},
+                    "prompts": {},
+                    "resources": {},
+                    "tools": {
+                        "listChanged": False
+                    }
+                },
+                "serverInfo": {
+                    "name": "Neuro-san-MCPServer",
+                    "title": "Neuro-san MCP Server",
+                    "version": "1.0.0"
+                },
+                "instructions": ""
+            }
+        }
 
     @staticmethod
     def safe_request_id(request_id: Union[int, str]) -> str:

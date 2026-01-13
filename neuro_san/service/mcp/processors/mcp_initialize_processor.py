@@ -24,7 +24,7 @@ from typing import Tuple
 from neuro_san.service.http.logging.http_logger import HttpLogger
 from neuro_san.service.utils.mcp_server_context import McpServerContext
 from neuro_san.service.mcp.interfaces.client_session import ClientSession
-from neuro_san.service.mcp.util.requests_util import RequestsUtil
+from neuro_san.service.mcp.util.mcp_request_util import McpRequestUtil
 
 
 class McpInitializeProcessor:
@@ -61,28 +61,7 @@ class McpInitializeProcessor:
             session_id = session.get_id()
             self.logger.info(metadata, "Created new MCP client session with id: %s", session_id)
 
-        response_dict: Dict[str, Any] =\
-            {
-                "jsonrpc": "2.0",
-                "id": RequestsUtil.safe_request_id(request_id),
-                "result": {
-                    "protocolVersion": "2025-06-18",
-                    "capabilities": {
-                        "logging": {},
-                        "prompts": {},
-                        "resources": {},
-                        "tools": {
-                            "listChanged": False
-                        }
-                    },
-                    "serverInfo": {
-                        "name": "Neuro-san-MCPServer",
-                        "title": "Neuro-san MCP Server",
-                        "version": "1.0.0"
-                    },
-                    "instructions": ""
-                }
-            }
+        response_dict: Dict[str, Any] = McpRequestUtil.get_handshake_response(request_id)
         return response_dict, session_id
 
     async def activate_session(

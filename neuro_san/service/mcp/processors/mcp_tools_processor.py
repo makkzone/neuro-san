@@ -34,7 +34,7 @@ from neuro_san.service.http.interfaces.agent_authorizer import AgentAuthorizer
 from neuro_san.service.generic.async_agent_service import AsyncAgentService
 from neuro_san.service.generic.async_agent_service_provider import AsyncAgentServiceProvider
 from neuro_san.service.mcp.util.mcp_errors_util import McpErrorsUtil
-from neuro_san.service.mcp.util.requests_util import RequestsUtil
+from neuro_san.service.mcp.util.mcp_request_util import McpRequestUtil
 from neuro_san.service.mcp.validation.tool_request_validator import ToolRequestValidator
 from neuro_san.service.http.logging.http_logger import HttpLogger
 
@@ -74,7 +74,7 @@ class McpToolsProcessor:
                     tools_description.append(tool_dict)
         return {
             "jsonrpc": "2.0",
-            "id": RequestsUtil.safe_request_id(request_id),
+            "id": McpRequestUtil.safe_request_id(request_id),
             "result": {
                 "tools": tools_description
             }
@@ -172,7 +172,7 @@ class McpToolsProcessor:
 
         call_result: Dict[str, Any] = {
             "jsonrpc": "2.0",
-            "id": RequestsUtil.safe_request_id(request_id),
+            "id": McpRequestUtil.safe_request_id(request_id),
             "result": {
                 "content": [
                     {
@@ -189,7 +189,7 @@ class McpToolsProcessor:
             # For backward compatibility, also add text version of structure:
             structure_str: str = f"```json\n{json.dumps(result_structure, indent=2)}\n```"
             result_text = result_text + structure_str
-        call_result["result"]["content"][0]["text"] = RequestsUtil.safe_message(result_text)
+        call_result["result"]["content"][0]["text"] = McpRequestUtil.safe_message(result_text)
         return call_result
 
     async def _get_tool_description(self, agent_name: str, metadata: Dict[str, Any]) -> Dict[str, Any]:
