@@ -232,7 +232,7 @@ Need at least {num_need_success} to consider {hocon_file} test to be successful.
 
         # Prepare the processor
         now = datetime.now()
-        datestr: str = now.strftime("%Y-%m-%d-%H:%M:%S")
+        datestr: str = now.strftime("%Y-%m-%d-%H_%M_%S")
         thinking_file: str = f"/tmp/agent_test/{datestr}_agent.txt"
         # Added fixture_hocon_name to thinking_dir
         # for better uniqueness and traceability across different test fixtures.
