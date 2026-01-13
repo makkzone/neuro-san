@@ -302,8 +302,9 @@ Server response body:
         "params": {
           "name": "hello_world",
           "arguments": {
-            { "user_message": {"text": "Say hello in two words"}
-            }
+              "user_message": {
+                "text": "Say hello in two words"
+              }
           }
         }
       }'

@@ -61,17 +61,12 @@ class AgentCli:
 
         self.session: AgentSession = None
         self.thinking_dir: str = None
-        # Indicates if we are talking to MCP service
-        self.is_mcp_session: bool = False
 
     def main(self):
         """
         Main entry point for command line user interaction
         """
         self.parse_args()
-
-        # Determine if we are using an MCP session
-        self.is_mcp_session = self.args.connection == "mcp"
 
         # See if we are doing a list operation
         if self.args.list or self.args.tags or self.args.tag:
@@ -197,9 +192,7 @@ Some suggestions:
         input_processor = StreamingInputProcessor(self.DEFAULT_INPUT,
                                                   self.args.thinking_file,
                                                   self.session,
-                                                  self.thinking_dir,
-                                                  is_mcp_session=self.is_mcp_session,
-                                                  log_responses=self.is_mcp_session)
+                                                  self.thinking_dir)
 
         while not self.is_done(state):
 

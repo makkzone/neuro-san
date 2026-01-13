@@ -30,6 +30,7 @@ from neuro_san.internals.messages.chat_message_type import ChatMessageType
 from neuro_san.internals.messages.origination import Origination
 from neuro_san.message_processing.basic_message_processor import BasicMessageProcessor
 from neuro_san.session.direct_agent_session import DirectAgentSession
+from neuro_san.session.mcp_service_agent_session import McpServiceAgentSession
 
 
 class StreamingInputProcessor:
@@ -43,9 +44,7 @@ class StreamingInputProcessor:
                  default_input: str = "",
                  thinking_file: str = None,
                  session: AgentSession = None,
-                 thinking_dir: str = None,
-                 is_mcp_session: bool = False,
-                 log_responses: bool = False):
+                 thinking_dir: str = None):
         """
         Constructor
         """
@@ -53,8 +52,9 @@ class StreamingInputProcessor:
         self.default_input: str = default_input
         self.session: AgentSession = session
         self.processor = BasicMessageProcessor()
-        self.is_mcp_session: bool = is_mcp_session
-        self.log_responses: bool = log_responses
+        self.is_mcp_session: bool = isinstance(session, McpServiceAgentSession)
+        # Log responses only for MCP sessions
+        self.log_responses: bool = self.is_mcp_session
         if thinking_dir is not None and thinking_file is not None:
             self.processor.add_processor(ThinkingFileMessageProcessor(thinking_file, thinking_dir))
 

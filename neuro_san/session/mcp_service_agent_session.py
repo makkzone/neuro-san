@@ -1,5 +1,5 @@
 
-# Copyright © 2023-2025 Cognizant Technology Solutions Corp, www.cognizant.com.
+# Copyright © 2023-2026 Cognizant Technology Solutions Corp, www.cognizant.com.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,11 +27,10 @@ from leaf_common.time.timeout import Timeout
 
 from neuro_san.interfaces.agent_session import AgentSession
 from neuro_san.session.abstract_http_service_agent_session import AbstractHttpServiceAgentSession
+from neuro_san.service.mcp.util.mcp_request_util import McpRequestUtil
 
 # MCP protocol version required by this MCP session
-# Protocol specification is available at:
-# https://modelcontextprotocol.io/specification/2025-06-18
-MCP_VERSION: str = "2025-06-18"
+MCP_VERSION: str = McpRequestUtil.get_mcp_version()
 
 
 class McpServiceAgentSession(AbstractHttpServiceAgentSession, AgentSession):
@@ -49,7 +48,8 @@ class McpServiceAgentSession(AbstractHttpServiceAgentSession, AgentSession):
                  security_cfg: Dict[str, Any] = None,
                  umbrella_timeout: Timeout = None,
                  streaming_timeout_in_seconds: int = None,
-                 agent_name: str = None):
+                 agent_name: str = None,
+                 session_name: str = "Neuro SAN MCP Session"):
         """
         Creates an MCP protocol session.
 
@@ -72,6 +72,7 @@ class McpServiceAgentSession(AbstractHttpServiceAgentSession, AgentSession):
                         the service. Default is None, indicating connection should
                         stay open until the (last) result is yielded.
         :param agent_name: The name of the agent to talk to
+        :param session_name: The name of the session used in handshake exchange.
         """
         super().__init__(host=host, port=port, timeout_in_seconds=timeout_in_seconds,
                          metadata=metadata, security_cfg=security_cfg, umbrella_timeout=umbrella_timeout,
@@ -91,8 +92,8 @@ class McpServiceAgentSession(AbstractHttpServiceAgentSession, AgentSession):
                     "elicitation": {}
                 },
                 "clientInfo": {
-                    "name": "Neuro-san CLI Client",
-                    "title": "Neuro-san CLI Client",
+                    "name": session_name,
+                    "title": session_name,
                     "version": "1.0.0"
                 }
             }
