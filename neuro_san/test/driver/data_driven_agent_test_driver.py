@@ -27,6 +27,10 @@ from copy import copy
 from datetime import datetime
 from os import environ
 
+from concurrent.futures import as_completed
+from concurrent.futures import Future
+from concurrent.futures import ThreadPoolExecutor
+
 from leaf_common.config.file_of_class import FileOfClass
 from leaf_common.parsers.dictionary_extractor import DictionaryExtractor
 from leaf_common.persistence.easy.easy_hocon_persistence import EasyHoconPersistence
@@ -103,24 +107,29 @@ class DataDrivenAgentTestDriver:
         # Extract the second-to-last part of the path,the parent folder name.
         fixture_hocon_name = os.path.basename(os.path.dirname(hocon_file))
 
-        # Loop through each test iteration
-        # Note: This loop is parallelizable.
-        for iteration_index in range(num_iterations):
-            assert_capture: AssertCapture = self.capture_one_iteration(test_case, timeouts,
-                                                                       fixture_hocon_name, iteration_index)
-            iteration_asserts.append(assert_capture)
+        # Loop through each test iteration in parallel
+        with ThreadPoolExecutor(max_workers=num_iterations) as executor:
 
-        # Initial assessment of whether or not the test passed.
-        for assert_capture in iteration_asserts:
-            asserts: List[AssertionError] = assert_capture.get_asserts()
-            if len(asserts) > 0:
-                # Not successful
-                continue
+            futures: List[Future] = []
+            for iteration_index in range(num_iterations):
+                future: Future = executor.submit(self.capture_one_iteration, test_case, timeouts,
+                                                 fixture_hocon_name, iteration_index)
+                futures.append(future)
 
-            num_successful += 1
-            if num_successful == num_need_success:
-                # Don't look at more tests than we actually need to
-                break
+            for future in as_completed(futures):
+                assert_capture: AssertCapture = future.result()
+                iteration_asserts.append(assert_capture)
+
+                asserts: List[AssertionError] = assert_capture.get_asserts()
+                if len(asserts) > 0:
+                    # Not successful
+                    continue
+
+                num_successful += 1
+                if num_successful == num_need_success:
+                    # Don't look at more tests than we actually need to
+                    executor.shutdown(wait=False, cancel_futures=True)
+                    break
 
         # Don't bother reporting any asserts if we have met our success ratio.
         # Return early to pass this test.
@@ -150,7 +159,6 @@ Need at least {num_need_success} to consider {hocon_file} test to be successful.
         """
         # Capture the asserts for this iteration and add it to the list for later
         assert_capture = AssertCapture(self.asserts_basis)
-        iteration_asserts.append(assert_capture)
 
         # Perform a single iteration of the test.
         self.one_iteration(test_case, assert_capture, timeouts, fixture_hocon_name, iteration_index)
