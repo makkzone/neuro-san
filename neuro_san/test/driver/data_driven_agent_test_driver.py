@@ -102,16 +102,16 @@ class DataDrivenAgentTestDriver:
 
         # Extract the second-to-last part of the path,the parent folder name.
         fixture_hocon_name = os.path.basename(os.path.dirname(hocon_file))
-        for iteration_index in range(num_iterations):
 
-            # Capture the asserts for this iteration and add it to the list for later
-            assert_capture = AssertCapture(self.asserts_basis)
+        # Loop through each test iteration
+        # Note: This loop is parallelizable.
+        for iteration_index in range(num_iterations):
+            assert_capture: AssertCapture = self.capture_one_iteration(test_case, timeouts,
+                                                                       fixture_hocon_name, iteration_index)
             iteration_asserts.append(assert_capture)
 
-            # Perform a single iteration of the test.
-            self.one_iteration(test_case, assert_capture, timeouts, fixture_hocon_name, iteration_index)
-
-            # Update our counter if this iteration is successful
+        # Initial assessment of whether or not the test passed.
+        for assert_capture in iteration_asserts:
             asserts: List[AssertionError] = assert_capture.get_asserts()
             if len(asserts) > 0:
                 # Not successful
@@ -119,7 +119,7 @@ class DataDrivenAgentTestDriver:
 
             num_successful += 1
             if num_successful == num_need_success:
-                # Don't do more tests than we actually need to
+                # Don't look at more tests than we actually need to
                 break
 
         # Don't bother reporting any asserts if we have met our success ratio.
@@ -137,6 +137,25 @@ class DataDrivenAgentTestDriver:
 Need at least {num_need_success} to consider {hocon_file} test to be successful.
 """
                 raise AssertionError(message) from one_assert
+
+    def capture_one_iteration(self, test_case: Dict[str, Any], timeouts: List[Timeout],
+                              fixture_hocon_name: str, iteration_index: int) -> AssertCapture:
+        """
+
+        :param test_case: The dictionary describing the data-driven test case
+        :param timeouts: A list of timeout objects to check
+        :param fixture_hocon_name: A string containing the name of the fixture hocon file
+        :param iteration_index: The index of this test iteration for the success_ratio
+        :return: An AssertCapture object for the iteration.
+        """
+        # Capture the asserts for this iteration and add it to the list for later
+        assert_capture = AssertCapture(self.asserts_basis)
+        iteration_asserts.append(assert_capture)
+
+        # Perform a single iteration of the test.
+        self.one_iteration(test_case, assert_capture, timeouts, fixture_hocon_name, iteration_index)
+
+        return assert_capture
 
     # pylint: disable=too-many-locals
     def one_iteration(self, test_case: Dict[str, Any], asserts: AssertForwarder,
