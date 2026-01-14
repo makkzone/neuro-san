@@ -27,6 +27,10 @@ from copy import copy
 from datetime import datetime
 from os import environ
 
+from concurrent.futures import as_completed
+from concurrent.futures import Future
+from concurrent.futures import ThreadPoolExecutor
+
 from leaf_common.config.file_of_class import FileOfClass
 from leaf_common.parsers.dictionary_extractor import DictionaryExtractor
 from leaf_common.persistence.easy.easy_hocon_persistence import EasyHoconPersistence
@@ -102,27 +106,35 @@ class DataDrivenAgentTestDriver:
 
         # Extract the second-to-last part of the path,the parent folder name.
         fixture_hocon_name = os.path.basename(os.path.dirname(hocon_file))
-        for index in range(num_iterations):
 
-            _ = index
+        # Loop through each test iteration in parallel
+        with ThreadPoolExecutor(max_workers=num_iterations) as executor:
 
-            # Capture the asserts for this iteration and add it to the list for later
-            assert_capture = AssertCapture(self.asserts_basis)
-            iteration_asserts.append(assert_capture)
+            futures: List[Future] = []
+            for iteration_index in range(num_iterations):
 
-            # Perform a single iteration of the test.
-            self.one_iteration(test_case, assert_capture, timeouts, fixture_hocon_name)
+                # Don't include an iteration index if there is only one iteration to do.
+                if num_iterations == 1:
+                    iteration_index = None
 
-            # Update our counter if this iteration is successful
-            asserts: List[AssertionError] = assert_capture.get_asserts()
-            if len(asserts) > 0:
-                # Not successful
-                continue
+                future: Future = executor.submit(self.capture_one_iteration, test_case, timeouts,
+                                                 fixture_hocon_name, iteration_index)
+                futures.append(future)
 
-            num_successful += 1
-            if num_successful == num_need_success:
-                # Don't do more tests than we actually need to
-                break
+            for future in as_completed(futures):
+                assert_capture: AssertCapture = future.result()
+                iteration_asserts.append(assert_capture)
+
+                asserts: List[AssertionError] = assert_capture.get_asserts()
+                if len(asserts) > 0:
+                    # Not successful
+                    continue
+
+                num_successful += 1
+                if num_successful == num_need_success:
+                    # Don't look at more tests than we actually need to
+                    executor.shutdown(wait=False, cancel_futures=True)
+                    break
 
         # Don't bother reporting any asserts if we have met our success ratio.
         # Return early to pass this test.
@@ -140,15 +152,35 @@ Need at least {num_need_success} to consider {hocon_file} test to be successful.
 """
                 raise AssertionError(message) from one_assert
 
-    # pylint: disable=too-many-locals
+    def capture_one_iteration(self, test_case: Dict[str, Any], timeouts: List[Timeout],
+                              fixture_hocon_name: str, iteration_index: int) -> AssertCapture:
+        """
+
+        :param test_case: The dictionary describing the data-driven test case
+        :param timeouts: A list of timeout objects to check
+        :param fixture_hocon_name: A string containing the name of the fixture hocon file
+        :param iteration_index: The index of this test iteration for the success_ratio
+        :return: An AssertCapture object for the iteration.
+        """
+        # Capture the asserts for this iteration and add it to the list for later
+        assert_capture = AssertCapture(self.asserts_basis)
+
+        # Perform a single iteration of the test.
+        self.one_iteration(test_case, assert_capture, timeouts, fixture_hocon_name, iteration_index)
+
+        return assert_capture
+
+    # pylint: disable=too-many-locals, too-many-arguments, too-many-positional-arguments
     def one_iteration(self, test_case: Dict[str, Any], asserts: AssertForwarder,
-                      timeouts: List[Timeout], fixture_hocon_name):
+                      timeouts: List[Timeout], fixture_hocon_name: str, iteration_index: int):
         """
         Perform a single iteration on the test case.
 
         :param test_case: The dictionary describing the data-driven test case
         :param asserts: The AssertForwarder to send asserts to.
         :param timeouts: A list of timeout objects to check
+        :param fixture_hocon_name: A string containing the name of the fixture hocon file
+        :param iteration_index: The index of this test iteration for the success_ratio
         """
 
         # Get the agent to use
@@ -196,7 +228,7 @@ Need at least {num_need_success} to consider {hocon_file} test to be successful.
                     session.reset()
 
                 chat_context = self.interact(agent, session, interaction, chat_context, asserts,
-                                             timeouts, fixture_hocon_name)
+                                             timeouts, fixture_hocon_name, iteration_index)
 
     def parse_hocon_test_case(self, hocon_file: str) -> Dict[str, Any]:
         """
@@ -214,7 +246,7 @@ Need at least {num_need_success} to consider {hocon_file} test to be successful.
     # pylint: disable=too-many-locals,too-many-arguments,too-many-positional-arguments
     def interact(self, agent: str, session: AgentSession, interaction: Dict[str, Any],
                  chat_context: Dict[str, Any], asserts: AssertForwarder,
-                 timeouts: List[Timeout], fixture_hocon_name) -> Dict[str, Any]:
+                 timeouts: List[Timeout], fixture_hocon_name: str, iteration_index: int) -> Dict[str, Any]:
         """
         Interact with an agent and evaluate its output
 
@@ -223,6 +255,8 @@ Need at least {num_need_success} to consider {hocon_file} test to be successful.
         :param chat_context: The chat context to use with the interaction (if any)
         :param asserts: The AssertForwarder to send asserts to.
         :param timeouts: A list of timeout objects to check
+        :param fixture_hocon_name: A string containing the name of the fixture hocon file
+        :param iteration_index: The index of this test iteration for the success_ratio
         """
         _ = agent       # For now
         empty: Dict[str, Any] = {}
@@ -233,10 +267,15 @@ Need at least {num_need_success} to consider {hocon_file} test to be successful.
         # Prepare the processor
         now = datetime.now()
         datestr: str = now.strftime("%Y-%m-%d-%H_%M_%S")
-        thinking_file: str = f"/tmp/agent_test/{datestr}_agent.txt"
+        basis_dir: str = os.environ.get("AGENT_TEST_THINKING_BASIS", "/tmp/agent_test")
+        thinking_file: str = f"{basis_dir}/{datestr}_agent.txt"
+
         # Added fixture_hocon_name to thinking_dir
         # for better uniqueness and traceability across different test fixtures.
-        thinking_dir: str = f"/tmp/agent_test/{datestr}_{fixture_hocon_name}_agent"
+        index_suffix: str = ""
+        if iteration_index is not None:
+            index_suffix = f"_{iteration_index}"
+        thinking_dir: str = f"{basis_dir}/{datestr}_{fixture_hocon_name}{index_suffix}"
 
         # Remove any contents that might be there already.
         # Writing over existing dir will just confuse output.
