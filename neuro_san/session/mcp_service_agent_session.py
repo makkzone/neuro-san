@@ -27,7 +27,7 @@ from leaf_common.time.timeout import Timeout
 
 from neuro_san.interfaces.agent_session import AgentSession
 from neuro_san.session.abstract_http_service_agent_session import AbstractHttpServiceAgentSession
-from neuro_san.client.mcp_chat_response_dictionary_converter import McpChatResponseDictionaryConverter
+from neuro_san.session.mcp_chat_response_dictionary_converter import McpChatResponseDictionaryConverter
 
 # MCP protocol version supported by this MCP session
 # Protocol specification is available at:
