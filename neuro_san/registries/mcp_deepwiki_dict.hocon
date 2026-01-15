@@ -39,8 +39,8 @@
             "name": "searcher",
             "instructions": "Use your tool to respond to the inquiry.",
             "function": {
-            "description": "Assist user with answer from deepwiki."
-            }
+                "description": "Assist user with answer from deepwiki."
+            },
             "tools": [
                 {
                     # Only support streamable http protocal
@@ -51,8 +51,7 @@
                     # If omitted, all tools are enabled.
                     "tools": ["read_wiki_structure", "ask_question"]
 
-                    # Future: provide a way to pass authentication details and/or
-                    # custom request metadata (e.g., headers, tokens).
+                    # For authentication, see https://github.com/cognizant-ai-lab/neuro-san/blob/main/docs/agent_hocon_reference.md#authentication
                 }
             ]
         }
