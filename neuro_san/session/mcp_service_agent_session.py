@@ -27,6 +27,7 @@ from leaf_common.time.timeout import Timeout
 
 from neuro_san.interfaces.agent_session import AgentSession
 from neuro_san.session.abstract_http_service_agent_session import AbstractHttpServiceAgentSession
+from neuro_san.session.mcp_chat_response_dictionary_converter import McpChatResponseDictionaryConverter
 
 # MCP protocol version supported by this MCP session
 # Protocol specification is available at:
@@ -192,10 +193,6 @@ class McpServiceAgentSession(AbstractHttpServiceAgentSession, AgentSession):
             Note that responses to the chat input might be numerous and will come as they
             are produced until the system decides there are no more messages to be sent.
         """
-
-        req_str: str = json.dumps(request_dict, indent=4)
-        print(f"Request string: {req_str}")
-
         # Pack the chat request dictionary into an MCP method call format:
         mcp_payload = {
             "jsonrpc": "2.0",
@@ -218,7 +215,9 @@ class McpServiceAgentSession(AbstractHttpServiceAgentSession, AgentSession):
                 response.raise_for_status()
                 for line in response.iter_lines(decode_unicode=True):
                     if line.strip():  # Skip empty lines
+                        # Each line is a JSON object representing an MCP tool call(chat) response
                         result_dict = json.loads(line)
+                        result_dict = McpChatResponseDictionaryConverter().to_dict(result_dict)
                         yield result_dict
         except Exception as exc:  # pylint: disable=broad-exception-caught
             raise ValueError(self.help_message(path)) from exc

@@ -56,11 +56,12 @@ this value should only be the stem of that file.
 
 Single string values can be:
 
-| value | meaning |
-|:----------------|:----------|
-| direct (default)| Connect directly to the agent via a neuro-san library call - no server required. |
-| http  |  Connect to the agent via a server via http |
-| https |  Connect to the agent via a server via secure http |
+| value            | meaning                                                                          |
+|:-----------------|:---------------------------------------------------------------------------------|
+| direct (default) | Connect directly to the agent via a neuro-san library call - no server required. |
+| http             | Connect to the agent via a server via http                                       |
+| https            | Connect to the agent via a server via secure http                                |
+| mcp              | Connect to the agent via MCP protocol                                            |
 
 Note that it is possible to specify a list of connection types for the same test case.
 If this is the case, the test driver will conduct the same test via each connection type.

@@ -50,9 +50,8 @@ class StreamingInputProcessor:
         self.default_input: str = default_input
         self.session: AgentSession = session
         self.processor = BasicMessageProcessor()
-        self.is_mcp_session: bool = isinstance(session, McpServiceAgentSession)
         # Log responses only for MCP sessions
-        self.log_responses: bool = self.is_mcp_session
+        self.log_responses: bool = isinstance(session, McpServiceAgentSession)
         if thinking_dir is not None and thinking_file is not None:
             self.processor.add_processor(ThinkingFileMessageProcessor(thinking_file, thinking_dir))
 
@@ -97,14 +96,10 @@ class StreamingInputProcessor:
         for chat_response in chat_responses:
 
             if self.log_responses:
-                print(f"DEBUG: Raw chat response: {json.dumps(chat_response, indent=4)}")
+                mcp_response: Dict[str, Any] = chat_response.get("mcp_response", empty)
+                print(f"DEBUG: MCP chat response: {json.dumps(mcp_response, indent=4)}")
 
-            response: Dict[str, Any] = None
-            if self.is_mcp_session:
-                response = self.unpack_mcp_chat_response(chat_response)
-            else:
-                response = self.unpack_native_chat_response(chat_response)
-
+            response: Dict[str, Any] = chat_response.get("response", empty)
             self.processor.process_message(response)
 
             # Update the state if there is something to update it with
