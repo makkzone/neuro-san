@@ -44,7 +44,10 @@
             "instructions": """Always use your tool to respond to the music inquiry. The tool has a service fee and will tell you the fee for the query, which you have to do the calculation to accumulate.
 Then answer with a JSON message that has two keys:
 1. An "answer" key whose value has the answer to the question
-2. A "running_cost" key whose value is the running cost or accumulated fee.""",
+2. A "running_cost" key whose value is the running cost or accumulated fee.
+
+If there is no tool, respond with "Error: cannot connect to `music_nerd_pro` via MCP protocal. Please check the server status and manifest file.".
+""",
             "function": {
                 "description": "Answer music-related questions."
             },
