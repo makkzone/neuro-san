@@ -32,7 +32,12 @@
     "math_guy.hocon": true,
     "math_guy_passthrough.hocon": true,
     "music_nerd.hocon": true,
-    "music_nerd_pro.hocon": true,
+    "music_nerd_pro.hocon": {
+        # A long-hand version of what the simple boolean true value expands to.
+        "serve": true, # Whether or not this agent network should be served up
+        "mcp": true # Whether or not this agent network should be served as an MCP tool.
+        # See https://github.com/cognizant-ai-lab/neuro-san/blob/main/docs/manifest_hocon_reference.md
+    },
     "music_nerd_pro_llm_anthropic.hocon": true,
     "music_nerd_pro_llm_gemini.hocon": true,
     "music_nerd_pro_llm_azure.hocon": true,
@@ -78,6 +83,9 @@
     "mcp_deepwiki_str.hocon": true,
     # This is an example of an agent network that uses MCP tool to interact with GitHub, which requires authentication.
     "mcp_github.hocon": true,
+    # This is an example of an agent network that uses neuro-san as an MCP server where each agent is a tool.
+    # Make sure to start the neuro-san server at localhost:8080 before running this network.
+    "mcp_neurosan.hocon": true,
 
     # Agents having to do with test infrastructure
     "gist.hocon": true,

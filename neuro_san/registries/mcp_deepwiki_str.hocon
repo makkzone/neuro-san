@@ -39,13 +39,15 @@
             "name": "searcher",
             "instructions": "Use your tool to respond to the inquiry.",
             "function": {
-            "description": "Assist user with answer from deepwiki."
+                "description": "Assist user with answer from deepwiki."
             }
             # Only support streamable http protocal
             # For other modes of transport, use coded tool implementation
             # Moreover, if the URL does not start with "https://mcp" or end with "/mcp" or "/mcp/",
             # use dictionary format: {"url": "https://example.com"} instead.
             "tools": ["https://mcp.deepwiki.com/mcp"]
+            
+            # For authentication, see https://github.com/cognizant-ai-lab/neuro-san/blob/main/docs/agent_hocon_reference.md#authentication
         }
     ]
 }
