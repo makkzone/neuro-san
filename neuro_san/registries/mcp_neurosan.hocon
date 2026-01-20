@@ -54,7 +54,7 @@ If there is no tool, respond with "Error: cannot connect to `music_nerd_pro` via
             "tools": [
                 {
                     # Make sure to start the neuro-san server at localhost:8080 before using this MCP tool.
-                    # Only support streamable http protocal
+                    # Only support streamable http protocol
                     # For other modes of transport, use coded tool implementation
                     "url": "http://localhost:8080/mcp",
 
@@ -64,7 +64,10 @@ If there is no tool, respond with "Error: cannot connect to `music_nerd_pro` via
 
                     # For authentication, see https://github.com/cognizant-ai-lab/neuro-san/blob/main/docs/agent_hocon_reference.md#authentication
                 }
-            ]
+            ],
+
+            # Parse any JSON in responses into the structure field of the ChatMessage.
+            "structure_formats": "json"
         }
     ]
 }
