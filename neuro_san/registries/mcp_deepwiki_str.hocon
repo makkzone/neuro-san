@@ -40,7 +40,7 @@
             "instructions": "Use your tool to respond to the inquiry.",
             "function": {
                 "description": "Assist user with answer from deepwiki."
-            }
+            },
             # Only support streamable http protocal
             # For other modes of transport, use coded tool implementation
             # Moreover, if the URL does not start with "https://mcp" or end with "/mcp" or "/mcp/",

@@ -68,6 +68,7 @@ class TestUnitTestHocons(TestCase):
         # Ideally more basic functionality will come first.
         # Barring that, try to stick to alphabetical order.
         "music_nerd_pro/combination_responses_with_history_http.hocon",
+        "mcp_neurosan/music_nerd_pro_mcp_neurosan.hocon",
 
         # List more hocon files as they become available here.
     ]), skip_on_empty=True)
