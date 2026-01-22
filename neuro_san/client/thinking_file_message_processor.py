@@ -23,6 +23,9 @@ import json
 import uuid
 
 from pathlib import Path
+from time import localtime
+from time import strftime
+from time import time
 
 from neuro_san.internals.messages.chat_message_type import ChatMessageType
 from neuro_san.internals.messages.origination import Origination
@@ -87,6 +90,7 @@ class ThinkingFileMessageProcessor(MessageProcessor):
         :param origin_str: The string representing the origin of the message
         """
 
+        timestamp: float = time()
         response_type: str = response.get("type")
         message_type: ChatMessageType = ChatMessageType.from_response_type(response_type)
         message_type_str: str = ChatMessageType.to_string(message_type)
@@ -112,7 +116,7 @@ class ThinkingFileMessageProcessor(MessageProcessor):
         origin_filename: str = self.origins.get(origin_str, origin_str)
 
         try:
-            self._write_to_file(origin_filename, origin_str, message_type_str, use_origin, text)
+            self._write_to_file(origin_filename, origin_str, message_type_str, use_origin, text, timestamp)
         except OSError as os_error:
             # For very deep networks we can sometimes get a "File name too long",
             # which is Error code 63.
@@ -121,7 +125,7 @@ class ThinkingFileMessageProcessor(MessageProcessor):
                 # Retry with a uuid as file name.
                 # If this fails, there's no helping ya.
                 origin_filename = str(uuid.uuid4())
-                self._write_to_file(origin_filename, origin_str, message_type_str, use_origin, text)
+                self._write_to_file(origin_filename, origin_str, message_type_str, use_origin, text, timestamp)
 
                 # Squirell that uuid away so results continue to go to the same
                 # file over and over again.
@@ -130,7 +134,8 @@ class ThinkingFileMessageProcessor(MessageProcessor):
                 raise os_error
 
     def _write_to_file(self, origin_filename: str, origin_str: str,
-                       message_type_str: str, use_origin: str, text: str):
+                       message_type_str: str, use_origin: str, text: str,
+                       timestamp: float):
 
         filename: Path = self.thinking_file
         if self.thinking_dir:
@@ -150,7 +155,8 @@ class ThinkingFileMessageProcessor(MessageProcessor):
                 thinking.write(f"Agent: {origin_str}\n")
 
             # Write the message out
-            thinking.write(f"\n[{message_type_str}{use_origin}]:\n")
+            timestamp_str: str = strftime("%Y-%m-%d %H:%M:%S", localtime(timestamp))
+            thinking.write(f"\n[{message_type_str}{use_origin}] @ {timestamp_str}:\n")
             thinking.write(text)
             thinking.write("\n")
 
