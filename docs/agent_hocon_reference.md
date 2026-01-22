@@ -241,7 +241,7 @@ Set the `class` key to one of the values listed below, then specify the model us
 | LLM Provider  | Class Value   |
 |:--------------|:--------------|
 | Anthropic     | anthropic     |
-| Azure OpenAI  | azure_openai  |
+| Azure OpenAI  | azure-openai  |
 | Google Gemini | gemini        |
 | NVidia        | nvidiea       |
 | Ollma         | ollama        |
