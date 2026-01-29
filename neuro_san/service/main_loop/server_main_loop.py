@@ -25,7 +25,6 @@ from argparse import ArgumentParser
 from leaf_server_common.logging.logging_setup import setup_logging
 
 from neuro_san import DEPLOY_DIR
-from neuro_san import TOP_LEVEL_DIR
 from neuro_san.interfaces.agent_session import AgentSession
 from neuro_san.service.interfaces.startable import Startable
 from neuro_san.internals.graph.persistence.registry_manifest_restorer import RegistryManifestRestorer
@@ -57,7 +56,6 @@ class ServerMainLoop:
         """
         Constructor
         """
-        self.grpc_port: int = 0
         self.http_port: int = 0
 
         self.agent_networks: Dict[str, Dict[str, AgentNetwork]] = {}
@@ -80,11 +78,6 @@ class ServerMainLoop:
         """
         # Set up the CLI parser
         arg_parser = ArgumentParser()
-
-        # This argument is actually ignored, but still parsed for backward compatibility
-        arg_parser.add_argument("--port", type=int,
-                                default=int(os.environ.get("AGENT_PORT", 0)),
-                                help="Port number for the grpc service")
 
         arg_parser.add_argument("--http_port", type=int,
                                 default=int(os.environ.get("AGENT_HTTP_PORT", AgentSession.DEFAULT_HTTP_PORT)),
@@ -166,7 +159,6 @@ class ServerMainLoop:
         server_status = ServerStatus(self.server_name)
         self.server_context.set_server_status(server_status)
 
-        server_status.grpc_service.set_requested(False)
         self.http_port = args.http_port
         if self.http_port == 0:
             server_status.http_service.set_requested(False)
@@ -222,7 +214,7 @@ class ServerMainLoop:
         Return a file path to default location of OpenAPI specification file
         for neuro-san service.
         """
-        return TOP_LEVEL_DIR.get_file_in_basis("api/grpc/agent_service.json")
+        return ""
 
     def main_loop(self):
         """

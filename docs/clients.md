@@ -18,9 +18,7 @@ There are async version of all of the above as well.
 
 ## Other clients
 
-A neuro-san server uses HTTP under the hood. You can check out the protobufs definition of the
-API under neuro_san/api/grpc.  The place to start is agent.proto for the service definitions.
-The next most important file there is chat.proto for the chat message definitions.
+A neuro-san server uses HTTP under the hood.
 
 ### Using curl to interact with a neuro-san server
 

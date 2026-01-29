@@ -11,9 +11,6 @@
 # paths.
 ignore=.git
 
-# Directories from top level that should be ignored.
-ignore-paths=neuro_san/api/grpc
-
 # Add files or directories matching the regex patterns to the blacklist. The
 # regex matches against base names, not paths.
 ignore-patterns=
