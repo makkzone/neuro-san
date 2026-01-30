@@ -266,12 +266,11 @@ class HttpServer(AgentAuthorizer, AgentStateListener):
         :return: a dictionary with request data to be passed to an http handler.
         """
         open_api_dict: Dict[str, Any] = None
-        if self.openapi_service_spec_path:
-            try:
-                with open(self.openapi_service_spec_path, "r", encoding='utf-8') as f_out:
-                    open_api_dict = json.load(f_out)
-            except Exception as exc:  # pylint: disable=broad-exception-caught
-                raise ValueError(f"Failed to load '{self.openapi_service_spec_path}'") from exc
+        try:
+            with open(self.openapi_service_spec_path, "r", encoding='utf-8') as f_out:
+                open_api_dict = json.load(f_out)
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            raise ValueError(f"Failed to load '{self.openapi_service_spec_path}'") from exc
 
         return {
             "agent_policy": self,

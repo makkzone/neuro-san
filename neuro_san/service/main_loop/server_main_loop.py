@@ -80,8 +80,11 @@ class ServerMainLoop:
         # Set up the CLI parser
         arg_parser = ArgumentParser()
 
+        # AGENT_PORT is a fallback for AGENT_HTTP_PORT for backward compatibility
+        default_http_port = os.environ.get("AGENT_HTTP_PORT",
+                                           os.environ.get("AGENT_PORT", AgentSession.DEFAULT_HTTP_PORT))
         arg_parser.add_argument("--http_port", type=int,
-                                default=int(os.environ.get("AGENT_HTTP_PORT", AgentSession.DEFAULT_HTTP_PORT)),
+                                default=int(default_http_port),
                                 help="Port number for http service endpoint")
         arg_parser.add_argument("--server_name", type=str,
                                 default=str(os.environ.get("AGENT_SERVER_NAME", self.server_name)),
