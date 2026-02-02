@@ -118,8 +118,11 @@ class DataDrivenChatSession(RunTarget):
 
         # Update sly data with metadata from the request headers so this information
         # can be made available in CodedTools, privately, without any leakage to LLMs.
+        # Only add this if it doesn't already exist w/rt what the user gave us.
         if self.sly_data.get("request_metadata") is None:
-            self.sly_data["request_metadata"] = invocation_context.get_metadata()
+            # Make a deep copy so the server's idea of the original metadata doesn't get modified
+            # should any CodedTool somehow get the idea to modify it.
+            self.sly_data["request_metadata"] = copy.deepcopy(invocation_context.get_metadata())
 
         run_context: RunContext = RunContextFactory.create_run_context(None, None,
                                                                        invocation_context=invocation_context,
