@@ -15,23 +15,6 @@
 #
 # END COPYRIGHT
 
-"""
-Command-line tool for validating HOCON agent network configuration files.
-
-This script validates HOCON files against neuro-san's agent network validation rules,
-checking for issues such as:
-- Missing or unreachable agents
-- Cyclical dependencies
-- Invalid tool names
-- Empty instructions
-- Invalid URL references
-
-Usage:
-    python -m neuro_san.client.hocon_validator_cli path/to/agent.hocon
-    python -m neuro_san.client.hocon_validator_cli path/to/agent.hocon --verbose
-    python -m neuro_san.client.hocon_validator_cli path/to/agent.hocon --include-cycles
-"""
-
 from typing import Any
 from typing import Dict
 from typing import List
@@ -47,24 +30,23 @@ from pyparsing.exceptions import ParseSyntaxException
 
 from neuro_san.internals.interfaces.dictionary_validator import DictionaryValidator
 from neuro_san.internals.graph.persistence.agent_network_restorer import AgentNetworkRestorer
-from neuro_san.internals.validation.common.composite_dictionary_validator import (
-    CompositeDictionaryValidator
-)
-from neuro_san.internals.validation.network.cycles_network_validator import CyclesNetworkValidator
-from neuro_san.internals.validation.network.keyword_network_validator import KeywordNetworkValidator
-from neuro_san.internals.validation.network.missing_nodes_network_validator import (
-    MissingNodesNetworkValidator
-)
-from neuro_san.internals.validation.network.tool_name_network_validator import ToolNameNetworkValidator
-from neuro_san.internals.validation.network.unreachable_nodes_network_validator import (
-    UnreachableNodesNetworkValidator
-)
-from neuro_san.internals.validation.network.url_network_validator import UrlNetworkValidator
+from neuro_san.internals.validation.network.manifest_network_validator import ManifestNetworkValidator
 
 
 class HoconValidatorCli:
     """
     Command-line tool for validating HOCON agent network configuration files.
+
+    This script validates HOCON files against neuro-san's agent network validation rules,
+    checking for issues such as:
+    - Missing or unreachable agents
+    - Invalid tool names
+    - Empty instructions
+    - Invalid URL references
+
+    Usage:
+        python -m neuro_san.client.hocon_validator_cli path/to/agent.hocon
+        python -m neuro_san.client.hocon_validator_cli path/to/agent.hocon --verbose
     """
 
     def __init__(self):
@@ -118,7 +100,6 @@ class HoconValidatorCli:
 Examples:
   python -m neuro_san.client.hocon_validator_cli registries/hello_world.hocon
   python -m neuro_san.client.hocon_validator_cli my_agent.hocon --verbose
-  python -m neuro_san.client.hocon_validator_cli my_agent.hocon --include-cycles
             """
         )
 
@@ -133,14 +114,6 @@ Examples:
             default=False,
             action="store_true",
             help="Print additional information about the agent network"
-        )
-
-        arg_parser.add_argument(
-            "--include-cycles",
-            default=False,
-            action="store_true",
-            dest="include_cycles",
-            help="Include cycle detection in validation (cycles are allowed but flagged)"
         )
 
         arg_parser.add_argument(
@@ -228,20 +201,10 @@ Examples:
 
     def create_validator(self) -> DictionaryValidator:
         """
-        Create the composite validator based on command line arguments.
+        Create the validator using ManifestNetworkValidator.
 
         :return: A DictionaryValidator instance
         """
-        validators: List[DictionaryValidator] = [
-            KeywordNetworkValidator(),
-            MissingNodesNetworkValidator(),
-            UnreachableNodesNetworkValidator(),
-            ToolNameNetworkValidator(),
-        ]
-
-        if self.args.include_cycles:
-            validators.append(CyclesNetworkValidator())
-
         external_agents: List[str] = None
         if self.args.external_agents:
             external_agents = [agent.strip() for agent in self.args.external_agents.split(",")]
@@ -250,9 +213,7 @@ Examples:
         if self.args.mcp_servers:
             mcp_servers = [server.strip() for server in self.args.mcp_servers.split(",")]
 
-        validators.append(UrlNetworkValidator(external_agents, mcp_servers))
-
-        return CompositeDictionaryValidator(validators)
+        return ManifestNetworkValidator(external_agents, mcp_servers)
 
     def print_network_summary(self, config: Dict[str, Any]):
         """
@@ -281,14 +242,5 @@ Examples:
             print(f"\nMetadata: {json.dumps(metadata, indent=2)}")
 
 
-def main():
-    """
-    Entry point for the hocon_validator_cli module.
-    """
-    cli = HoconValidatorCli()
-    exit_code: int = cli.main()
-    sys.exit(exit_code)
-
-
 if __name__ == "__main__":
-    main()
+    sys.exit(HoconValidatorCli().main())
