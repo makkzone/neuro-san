@@ -49,7 +49,8 @@ class Assessor:
 
         # Run the tests per the test case, collecting failure information in the AssertForwarder
         asserts = AssessorAssertForwarder()
-        test_name: str = os.path.basename(self.args.test_hocon)
+        test_name: str = None
+        test_name, _ = os.path.splitext(os.path.basename(self.args.test_hocon))
         driver = DataDrivenAgentTestDriver(asserts, test_name=test_name)
 
         print(f"Testing {self.args.test_hocon}:")
