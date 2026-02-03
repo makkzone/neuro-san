@@ -289,7 +289,8 @@ Need at least {num_need_success} to consider {hocon_file} test to be successful.
             # Create the directory anew
             os.makedirs(thinking_dir)
 
-        input_processor = StreamingInputProcessor(session=session, thinking_dir=thinking_dir)
+        input_processor = StreamingInputProcessor(session=session, thinking_dir=thinking_dir,
+                                                  thinking_file="")
         processor: BasicMessageProcessor = input_processor.get_message_processor()
 
         # Prepare the request
