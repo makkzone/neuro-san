@@ -358,19 +358,8 @@ Need at least {num_need_success} to consider {hocon_file} test to be successful.
         if interaction.get("continue_conversation", True):
             return_chat_context = processor.get_chat_context()
             returned_sly_data: Dict[str, Any] = processor.get_sly_data()
-            # Merge sly_data strategy (similar to agent_cli):
-            # - If new sly_data is returned from the response, merge it with existing data
-            # - If existing data exists, update it (accumulate)
-            # - If no existing data, copy the new data
-            # - This allows sly_data to accumulate and persist across multiple interactions
-            if returned_sly_data is not None:
-                if current_sly_data is not None:
-                    current_sly_data.update(returned_sly_data)
-                    return_sly_data = current_sly_data
-                else:
-                    return_sly_data = returned_sly_data.copy()
-            else:
-                return_sly_data = current_sly_data
+            # Delegate merge logic to helper to keep this method concise
+            return_sly_data = self._merge_sly_data(current_sly_data, returned_sly_data)
         else:
             return_sly_data = current_sly_data
 
@@ -424,3 +413,25 @@ Need at least {num_need_success} to consider {hocon_file} test to be successful.
         """
         for one_timeout in timeouts:
             Timeout.check_if_not_none(one_timeout)
+
+    def _merge_sly_data(self, current_sly_data: Dict[str, Any],
+                        returned_sly_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Merge sly_data returned from the agent into the current sly_data.
+
+        Strategy:
+        - If `returned_sly_data` is not None:
+          - If `current_sly_data` exists, update it with the returned data and return it (accumulate).
+          - Otherwise, return a shallow copy of `returned_sly_data`.
+        - If `returned_sly_data` is None, return `current_sly_data` unchanged.
+
+        :param current_sly_data: sly_data carried from previous interaction (may be None)
+        :param returned_sly_data: sly_data returned by the processor (may be None)
+        :return: merged sly_data dictionary or None
+        """
+        if returned_sly_data is not None:
+            if current_sly_data is not None:
+                current_sly_data.update(returned_sly_data)
+                return current_sly_data
+            return returned_sly_data.copy()
+        return current_sly_data
