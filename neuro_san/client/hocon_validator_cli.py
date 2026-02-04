@@ -140,12 +140,24 @@ Examples:
             help="Output validation results as JSON"
         )
 
+        # Get or set AGENT_MANIFEST_FILE environment variable
+        agent_manifest_file: str = os.environ.get("AGENT_MANIFEST_FILE")
+        if not agent_manifest_file:
+            root_dir: str = os.getcwd()
+            agent_manifest_file = os.path.join(root_dir, "registries", "manifest.hocon")
+            os.environ["AGENT_MANIFEST_FILE"] = agent_manifest_file
+
+        default_registry_dir: str = os.path.dirname(
+            os.path.dirname(os.path.abspath(agent_manifest_file))
+        )
+
         arg_parser.add_argument(
             "--registry-dir",
             type=str,
-            default=None,
+            default=default_registry_dir,
             dest="registry_dir",
             help="Base directory containing the registries folder for resolving HOCON includes. "
+                 "Defaults to the parent directory of AGENT_MANIFEST_FILE. "
                  "Use this when your HOCON file has includes like 'include \"registries/...\"'"
         )
 
