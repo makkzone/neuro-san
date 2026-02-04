@@ -223,13 +223,17 @@ Need at least {num_need_success} to consider {hocon_file} test to be successful.
                     metadata=metadata,
                     connect_timeout_in_seconds=timeout_in_seconds)
             chat_context: Dict[str, Any] = None
+            # Track sly_data across interactions to allow accumulation and persistence
+            carried_sly_data: Dict[str, Any] = None
             for interaction in interactions:
 
                 if isinstance(session, DirectAgentSession):
                     session.reset()
 
-                chat_context = self.interact(agent, session, interaction, chat_context, asserts,
-                                             timeouts, fixture_hocon_name, iteration_index)
+                # interact() now returns a tuple of (chat_context, sly_data)
+                # Both are carried forward to maintain multi-turn conversation state
+                chat_context, carried_sly_data = self.interact(agent, session, interaction, chat_context, asserts,
+                                             timeouts, fixture_hocon_name, iteration_index, carried_sly_data)
 
     def parse_hocon_test_case(self, hocon_file: str) -> Dict[str, Any]:
         """
@@ -247,7 +251,8 @@ Need at least {num_need_success} to consider {hocon_file} test to be successful.
     # pylint: disable=too-many-locals,too-many-arguments,too-many-positional-arguments
     def interact(self, agent: str, session: AgentSession, interaction: Dict[str, Any],
                  chat_context: Dict[str, Any], asserts: AssertForwarder,
-                 timeouts: List[Timeout], fixture_hocon_name: str, iteration_index: int) -> Dict[str, Any]:
+                 timeouts: List[Timeout], fixture_hocon_name: str, iteration_index: int,
+                 sly_data: Dict[str, Any] = None) -> tuple:
         """
         Interact with an agent and evaluate its output
 
@@ -258,6 +263,8 @@ Need at least {num_need_success} to consider {hocon_file} test to be successful.
         :param timeouts: A list of timeout objects to check
         :param fixture_hocon_name: A string containing the name of the fixture hocon file
         :param iteration_index: The index of this test iteration for the success_ratio
+        :param sly_data: The sly_data from the previous interaction (if any)
+        :return: A tuple of (chat_context, sly_data) to use in the next interaction
         """
         _ = agent       # For now
         empty: Dict[str, Any] = {}
@@ -302,7 +309,11 @@ Need at least {num_need_success} to consider {hocon_file} test to be successful.
 
         # Prepare the request
         text: str = interaction.get("text")
-        sly_data: str = interaction.get("sly_data")
+        current_sly_data: str = interaction.get("sly_data")
+        # Use current interaction's sly_data if provided, otherwise use carried-over sly_data
+        # from the previous interaction. This allows sly_data to accumulate across turns.
+        if current_sly_data is None:
+            current_sly_data = sly_data
 
         # By having level to MINIMAL avoid unnecesssary thinking file(s) created.
         # MAXIMAL set to have thinking files.
@@ -313,7 +324,7 @@ Need at least {num_need_success} to consider {hocon_file} test to be successful.
         chat_filter: Dict[str, Any] = {
             "chat_filter_type": interaction.get("chat_filter", default_chat_filter)
         }
-        request: Dict[str, Any] = input_processor.formulate_chat_request(text, sly_data, chat_context, chat_filter)
+        request: Dict[str, Any] = input_processor.formulate_chat_request(text, current_sly_data, chat_context, chat_filter)
 
         # Prepare any interaction timeout
         if interaction.get("timeout_in_seconds") is not None:
@@ -338,10 +349,27 @@ Need at least {num_need_success} to consider {hocon_file} test to be successful.
 
         # See how we should continue the conversation
         return_chat_context: Dict[str, Any] = None
+        return_sly_data: Dict[str, Any] = None
         if interaction.get("continue_conversation", True):
             return_chat_context = processor.get_chat_context()
+            returned_sly_data: Dict[str, Any] = processor.get_sly_data()
+            # Merge sly_data strategy (similar to agent_cli):
+            # - If new sly_data is returned from the response, merge it with existing data
+            # - If existing data exists, update it (accumulate)
+            # - If no existing data, copy the new data
+            # - This allows sly_data to accumulate and persist across multiple interactions
+            if returned_sly_data is not None:
+                if current_sly_data is not None:
+                    current_sly_data.update(returned_sly_data)
+                    return_sly_data = current_sly_data
+                else:
+                    return_sly_data = returned_sly_data.copy()
+            else:
+                return_sly_data = current_sly_data
+        else:
+            return_sly_data = current_sly_data
 
-        return return_chat_context
+        return return_chat_context, return_sly_data
 
     def test_response_keys(self, processor: BasicMessageProcessor,
                            response_extractor: DictionaryExtractor,
