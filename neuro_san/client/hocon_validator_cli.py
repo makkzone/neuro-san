@@ -140,16 +140,14 @@ Examples:
             help="Output validation results as JSON"
         )
 
-        # Get or set AGENT_MANIFEST_FILE environment variable
+        # Determine default registry directory from AGENT_MANIFEST_FILE if set
         agent_manifest_file: str = os.environ.get("AGENT_MANIFEST_FILE")
-        if not agent_manifest_file:
-            root_dir: str = os.getcwd()
-            agent_manifest_file = os.path.join(root_dir, "registries", "manifest.hocon")
-            os.environ["AGENT_MANIFEST_FILE"] = agent_manifest_file
-
-        default_registry_dir: str = os.path.dirname(
-            os.path.dirname(os.path.abspath(agent_manifest_file))
-        )
+        if agent_manifest_file:
+            default_registry_dir: str = os.path.dirname(
+                os.path.dirname(os.path.abspath(agent_manifest_file))
+            )
+        else:
+            default_registry_dir: str = os.getcwd()
 
         arg_parser.add_argument(
             "--registry-dir",
