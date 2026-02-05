@@ -406,8 +406,7 @@ Need at least {num_need_success} to consider {hocon_file} test to be successful.
 
         Strategy:
         - If `returned_sly_data` is not None:
-          - If `current_sly_data` exists, create a copy, update it with the returned data,
-            and return it (accumulate).
+          - If `current_sly_data` exists, update it with the returned data and return it (accumulate).
           - Otherwise, return a shallow copy of `returned_sly_data`.
         - If `returned_sly_data` is None, return `current_sly_data` unchanged.
 
@@ -417,10 +416,8 @@ Need at least {num_need_success} to consider {hocon_file} test to be successful.
         """
         if returned_sly_data is not None:
             if current_sly_data is not None:
-                # Create a copy to avoid mutating the original
-                merged = current_sly_data.copy()
-                merged.update(returned_sly_data)
-                return merged
+                current_sly_data.update(returned_sly_data)
+                return current_sly_data
             return returned_sly_data.copy()
         return current_sly_data
 
