@@ -232,8 +232,17 @@ Need at least {num_need_success} to consider {hocon_file} test to be successful.
 
                 # interact() now returns a tuple of (chat_context, sly_data)
                 # Both are carried forward to maintain multi-turn conversation state
-                chat_context, carried_sly_data = self.interact(agent, session, interaction, chat_context, asserts,
-                                             timeouts, fixture_hocon_name, iteration_index, carried_sly_data)
+                chat_context, carried_sly_data = self.interact(
+                    agent,
+                    session,
+                    interaction,
+                    chat_context,
+                    asserts,
+                    timeouts,
+                    fixture_hocon_name,
+                    iteration_index,
+                    carried_sly_data
+                )
 
     def parse_hocon_test_case(self, hocon_file: str) -> Dict[str, Any]:
         """
