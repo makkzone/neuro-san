@@ -84,9 +84,6 @@ class HttpServiceAgentSession(AbstractHttpServiceAgentSession, AgentSession):
             Note that responses to the chat input might be numerous and will come as they
             are produced until the system decides there are no more messages to be sent.
         """
-
-        print("DEBUG: streaming_chat request_dict:", json.dumps(request_dict, indent=4))
-
         path: str = self.get_request_path("streaming_chat")
         try:
             with requests.post(path, json=request_dict, headers=self.get_headers(),

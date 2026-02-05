@@ -204,8 +204,6 @@ class McpServiceAgentSession(AbstractHttpServiceAgentSession, AgentSession):
             },
         }
 
-        print(f">>>>>>>>>>>>>>>>>>>>>Sending mcp payload {json.dumps(mcp_payload, indent=2)}")
-
         headers: Dict[str, str] = self.get_headers()
         headers["Content-Type"] = "application/json"
         headers[self.MCP_PROTOCOL_VERSION] = self.protocol_version
