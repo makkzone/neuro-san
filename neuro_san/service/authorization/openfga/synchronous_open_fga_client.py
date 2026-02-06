@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Dict
 
+from logging import getLogger
+from logging import Logger
 import os
 
 from threading import get_ident
@@ -39,6 +41,7 @@ class SynchronousOpenFgaClient:
 
         self.lock: Lock = Lock()
         self.client_map: Dict[str, OpenFgaClient] = {}
+        self.logger: Logger = getLogger(self.__class__.__name__)
 
     @classmethod
     def get_instance(cls):  # -> SynchronousOpenFgaClient
@@ -99,7 +102,7 @@ class SynchronousOpenFgaClient:
             fga_client: OpenFgaClient = self.client_map.get(map_key)
             if fga_client is None:
 
-                print(f"No client for store_name {store_name}")
+                self.logger.warning("No client for store_name %s", store_name)
                 fga_client = OpenFgaInit().initialize_client_for_store(store_name)
 
                 self.client_map[map_key] = fga_client

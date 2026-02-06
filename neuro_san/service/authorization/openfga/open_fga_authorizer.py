@@ -2,6 +2,8 @@ from typing import Any
 from typing import Dict
 from typing import List
 
+from logging import getLogger
+from logging import Logger
 import os
 
 from openfga_sdk.client.models.check_request import ClientCheckRequest
@@ -34,6 +36,7 @@ class OpenFgaAuthorizer(Authorizer):
 
         self.debug: bool = os.environ.get("DEBUG_AUTH") is not None
         self.fail_on_unauthorized: bool = os.environ.get("DEBUG_AUTH") == "hard"
+        self.logger: Logger = getLogger(self.__class__.__name__)
 
     def authorize(self, actor: Dict[str, Any], action: str, resource: Dict[str, Any]) -> bool:
         """
@@ -74,7 +77,8 @@ class OpenFgaAuthorizer(Authorizer):
 
         # Useful in debugging
         if self.debug:
-            print(f"authorize({use_actor}, {use_action}, {use_resource.get('type')}:{use_resource.get('id')})")
+            self.logger.debug("authorize(%s, %s, %s:%s)", use_actor, use_action,
+                              use_resource.get("type"), use_resource.get("id"))
 
         # Prepare a request to see if the server can tell us the answer.
         check_request = ClientCheckRequest(user=f"{use_actor.get('type')}:{use_actor.get('id')}",
@@ -87,8 +91,8 @@ class OpenFgaAuthorizer(Authorizer):
         if not authorized:
             message: str = f"Actor: {actor}   action: {action}   resource: {resource}"
             if self.debug:
-                print(message)
-                print(f"authorized is {authorized}")
+                self.logger.debug(message)
+                self.logger.debug("authorized is %s", authorized)
 
             if self.fail_on_unauthorized:
                 # Exception useful when trying to figure out where authorization
@@ -127,7 +131,7 @@ class OpenFgaAuthorizer(Authorizer):
         if resource.get("id") is not None:
             # We are looking for a specific id. Faster through authorize()
             if self.debug:
-                print("using authorize() for list()")
+                self.logger.debug("using authorize() for list()")
             authorized: bool = self.authorize(actor, relation, resource)
             if authorized:
                 ids.append(str(resource.get("id")))
@@ -144,7 +148,7 @@ class OpenFgaAuthorizer(Authorizer):
         resource_type: str = resource.get("type", "")
 
         if self.debug:
-            print(f"list({actor_id}, {relation}, {resource_type}:{resource.get('id')})")
+            self.logger.debug("list(%s, %s, %s:%s)", actor_id, relation, resource_type,  resource.get("id"))
 
         # Make the API call
         options: Dict[str, Any] = {}
@@ -262,7 +266,8 @@ class OpenFgaAuthorizer(Authorizer):
                                    object=f"{resource_type}:{resource_id}")
 
         if self.debug:
-            print(f"Granting to {actor_type}:{actor_id} : {relation} on {resource_type}:{resource_id}")
+            self.logger.debug("Granting to %s:%s : %s on %s:%s", actor_type, actor_id,
+                              relation, resource_type, resource_id)
 
         writes: List[ClientTuple] = []
         writes.append(client_tuple)
@@ -307,7 +312,8 @@ class OpenFgaAuthorizer(Authorizer):
                                    object=f"{resource_type}:{resource_id}")
 
         if self.debug:
-            print(f"Revoking from {actor_type}:{actor_id} : {relation} on {resource_type}:{resource_id}")
+            self.logger.debug("Revoking from %s:%s : %s on %s:%s", actor_type, actor_id,
+                              relation, resource_type, resource_id)
 
         deletes: List[ClientTuple] = []
         deletes.append(client_tuple)

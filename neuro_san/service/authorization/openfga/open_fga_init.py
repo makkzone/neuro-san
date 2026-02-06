@@ -1,6 +1,8 @@
 from typing import Any
 from typing import Dict
 
+from loggigo import getLogger
+from loggigo import Logger
 import json
 import os
 
@@ -43,6 +45,7 @@ class OpenFgaInit:
         Use SynchronousOpenFgaClient.get() instead.
         """
         self.open_fga_client: OpenFgaClient = None
+        self.logger: Logger = getLogger(self.__class__.__name__)
 
     def initialize_client_for_store(self, store_name: str) -> OpenFgaClient:
         """
@@ -106,7 +109,7 @@ class OpenFgaInit:
 
         # Look for our store
         use_store_name: str = os.environ.get("TEST_FGA_STORE_NAME", store_name)
-        print(f"Using store name {use_store_name}")
+        self.logging.info("Using store name %s", use_store_name)
         store_id: str = None
 
         # This is the first place that we attempt to connect to the OpenFGA server.
@@ -123,7 +126,7 @@ class OpenFgaInit:
                 store_id = store.id
                 # Checkmarx flags this as a destination for Privacy Violation path 4
                 # This is a False Positive. store ids and names themselves are not actually sensitive information.
-                print(f"Found {store_id} for name {use_store_name}")
+                self.logger.info("Found %s for name %s", store_id, use_store_name)
                 break
 
         # Create the store and a new client if not found
@@ -133,7 +136,7 @@ class OpenFgaInit:
             store_id: str = response.id
             # Checkmarx flags this as a destination for Privacy Violation path 3
             # This is a False Positive. "store_id" itself is not actually sensitive information.
-            print(f"Created FGA store id {store_id}")
+            self.logger.info("Created FGA store id %s", store_id)
 
         # From here on, always create a new client with the store_id configured
         new_client: OpenFgaClient = self.initialize_one_client(store_id)
@@ -165,7 +168,7 @@ class OpenFgaInit:
         # For now. Needs more to set the model up
         # Checkmarx flags this as a destination for Privacy Violation path 1 and 2
         # This is a False Positive. Any auth model id itself is not actually sensitive information.
-        print(f"FGA auth model id {found_auth_model}")
+        self.logger.info("FGA auth model id %s", found_auth_model)
 
         return self.open_fga_client
 
