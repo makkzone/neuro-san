@@ -25,7 +25,7 @@ class OpenFgaAuthorizer(Authorizer):
     Authorizer implementation for Open FGA ("Fine Grained Authorization").
     """
 
-    def __init__(self, fga_client: OpenFgaClient):
+    def __init__(self, fga_client: OpenFgaClient = None):
         """
         Constructor
 
