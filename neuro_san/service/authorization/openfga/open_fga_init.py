@@ -1,8 +1,8 @@
 from typing import Any
 from typing import Dict
 
-from loggigo import getLogger
-from loggigo import Logger
+from logging import getLogger
+from logging import Logger
 import json
 import os
 
