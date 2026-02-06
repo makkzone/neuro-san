@@ -17,7 +17,7 @@ from openfga_sdk.models.read_response import ReadResponse
 from openfga_sdk.models.tuple_key import TupleKey
 from openfga_sdk.sync import OpenFgaClient
 
-from neuro_san.service.interfaces.authorizer import Authorizer
+from neuro_san.service.authorization.interfaces.authorizer import Authorizer
 
 
 class OpenFgaAuthorizer(Authorizer):

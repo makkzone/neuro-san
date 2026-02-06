@@ -2,7 +2,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 
-from neuro_san.service.interfaces.authorizer import Authorizer
+from neuro_san.service.authorization.interfaces.authorizer import Authorizer
 
 
 class NullAuthorizer(Authorizer):
