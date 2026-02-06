@@ -17,42 +17,35 @@
 from typing import Any
 from typing import Dict
 from typing import List
+from types import ModuleType
 
-from logging import getLogger
-from logging import Logger
-import os
+from os import environ
 
-from openfga_sdk.client.models.check_request import ClientCheckRequest
-from openfga_sdk.client.models.list_objects_request import ClientListObjectsRequest
-from openfga_sdk.client.models.tuple import ClientTuple
-from openfga_sdk.client.models.write_request import ClientWriteRequest
-from openfga_sdk.models.check_response import CheckResponse
-from openfga_sdk.models.list_objects_response import ListObjectsResponse
-from openfga_sdk.models.read_request_tuple_key import ReadRequestTupleKey
-from openfga_sdk.models.read_response import ReadResponse
-from openfga_sdk.models.tuple_key import TupleKey
-from openfga_sdk.sync import OpenFgaClient
-
-from neuro_san.service.authorization.interfaces.authorizer import Authorizer
+from neuro_san.service.authorization.interfaces.abstract_authorizer import AbstractAuthorizer
 
 
-class OpenFgaAuthorizer(Authorizer):
+class OpenFgaAuthorizer(AbstractAuthorizer):
     """
-    Authorizer implementation for Open FGA ("Fine Grained Authorization").
+    AbstractAuthorizer implementation for Open FGA ("Fine Grained Authorization").
     """
 
-    def __init__(self, fga_client: OpenFgaClient = None):
+    def __init__(self, fga_client: Any = None):
         """
         Constructor
 
         :param fga_client: A pre-initialized OpenFgaClient
         """
+        super().__init__()
 
-        self.fga_client: OpenFgaClient = fga_client
+        # Lazy importing of openfga_sdk so extra dependency can be optional
+        self.openfga_sdk: ModuleType = self.resolver.resolve_class_in_module(class_name=None,
+                                                                             module_name="openfga_sdk",
+                                                                             install_if_missing="openfga-sdk")
 
-        self.debug: bool = os.environ.get("DEBUG_AUTH") is not None
-        self.fail_on_unauthorized: bool = os.environ.get("DEBUG_AUTH") == "hard"
-        self.logger: Logger = getLogger(self.__class__.__name__)
+        self.fga_client: self.openfga_sdk.sync.OpenFgaClient = fga_client
+
+        self.debug: bool = environ.get("DEBUG_AUTH") is not None
+        self.fail_on_unauthorized: bool = environ.get("DEBUG_AUTH") == "hard"
 
     def authorize(self, actor: Dict[str, Any], action: str, resource: Dict[str, Any]) -> bool:
         """
@@ -96,6 +89,11 @@ class OpenFgaAuthorizer(Authorizer):
             self.logger.debug("authorize(%s, %s, %s:%s)", use_actor, use_action,
                               use_resource.get("type"), use_resource.get("id"))
 
+        # Use classes from the lazily imported module to avoid extra required dependencies
+        # pylint: disable=invalid-name
+        ClientCheckRequest = self.openfga_sdk.client.models.check_request.ClientCheckRequest
+        CheckResponse = self.openfga_sdk.models.check_response.CheckResponse
+
         # Prepare a request to see if the server can tell us the answer.
         check_request = ClientCheckRequest(user=f"{use_actor.get('type')}:{use_actor.get('id')}",
                                            relation=use_action,
@@ -117,6 +115,7 @@ class OpenFgaAuthorizer(Authorizer):
 
         return authorized
 
+    # pylint: disable=too-many-locals
     def list(self, actor: Dict[str, Any], relation: str, resource: Dict[str, Any]) -> List[str]:
         """
         Return a list of resource ids that the actor has the given relation to,
@@ -165,6 +164,11 @@ class OpenFgaAuthorizer(Authorizer):
 
         if self.debug:
             self.logger.debug("list(%s, %s, %s:%s)", actor_id, relation, resource_type,  resource.get("id"))
+
+        # Use classes from the lazily imported module to avoid extra required dependencies
+        # pylint: disable=invalid-name
+        ClientListObjectsRequest = self.openfga_sdk.client.models.list_objects_request.ClientListObjectsRequest
+        ListObjectsResponse = self.openfga_sdk.models.list_objects_response.ListObjectsResponse
 
         # Make the API call
         options: Dict[str, Any] = {}
@@ -224,6 +228,12 @@ class OpenFgaAuthorizer(Authorizer):
         if len(resource_type) > 0 or len(resource_id) > 0:
             request_object = f"{resource_type}:{resource_id}"
 
+        # Use classes from the lazily imported module to avoid extra required dependencies
+        # pylint: disable=invalid-name
+        ReadRequestTupleKey = self.openfga_sdk.models.read_request_tuple_key.ReadRequestTupleKey
+        ReadResponse = self.openfga_sdk.models.read_response.ReadResponse
+        TupleKey = self.openfga_sdk.models.tuple_key.TupleKey
+
         # Make the API call
         options: Dict[str, Any] = {}
         body = ReadRequestTupleKey(user=request_user,
@@ -277,6 +287,12 @@ class OpenFgaAuthorizer(Authorizer):
         actor_id: str = actor.get("id", "")
         resource_type: str = resource.get("type", "")
         resource_id: str = resource.get("id", "")
+
+        # Use classes from the lazily imported module to avoid extra required dependencies
+        # pylint: disable=invalid-name
+        ClientTuple = self.openfga_sdk.client.models.tuple.ClientTuple
+        ClientWriteRequest = self.openfga_sdk.client.models.write_request.ClientWriteRequest
+
         client_tuple = ClientTuple(user=f"{actor_type}:{actor_id}",
                                    relation=relation,
                                    object=f"{resource_type}:{resource_id}")
@@ -288,7 +304,7 @@ class OpenFgaAuthorizer(Authorizer):
         writes: List[ClientTuple] = []
         writes.append(client_tuple)
 
-        # Previously some SpecialUser stuff used to go here.
+        self.handle_special_user_writes(writes, actor, resource)
 
         body = ClientWriteRequest(writes=writes, deletes=None)
 
@@ -323,6 +339,12 @@ class OpenFgaAuthorizer(Authorizer):
         actor_id: str = actor.get("id", "")
         resource_type: str = resource.get("type", "")
         resource_id: str = resource.get("id", "")
+
+        # Use classes from the lazily imported module to avoid extra required dependencies
+        # pylint: disable=invalid-name
+        ClientTuple = self.openfga_sdk.client.models.tuple.ClientTuple
+        ClientWriteRequest = self.openfga_sdk.client.models.write_request.ClientWriteRequest
+
         client_tuple = ClientTuple(user=f"{actor_type}:{actor_id}",
                                    relation=relation,
                                    object=f"{resource_type}:{resource_id}")
@@ -333,6 +355,7 @@ class OpenFgaAuthorizer(Authorizer):
 
         deletes: List[ClientTuple] = []
         deletes.append(client_tuple)
+
         body = ClientWriteRequest(writes=None, deletes=deletes)
 
         # Hard-won tip:
@@ -343,3 +366,14 @@ class OpenFgaAuthorizer(Authorizer):
         #   2)  the auth policy you think is being uploaded to the auth server
         #       in open_fga_init() is not the one actually landing in the server.
         _ = self.fga_client.write(body)
+
+    def handle_special_user_writes(self, writes: List[Any], actor: Dict[str, Any], resource: Dict[str, Any]):
+        """
+        This method is called from grant() or revoke() to handle special cases where
+        the actor or resource is a special user.
+
+        :writes: A list of ClientTuples to be written
+        :actor: The actor dictionary with the keys "type" and "id"
+        :resource: The resource dictionary with the keys "type" and "id"
+        """
+        _ = writes, actor, resource
