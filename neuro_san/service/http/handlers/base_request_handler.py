@@ -31,9 +31,9 @@ import tornado
 from tornado.web import RequestHandler
 
 from leaf_common.utils.async_atomic_counter import AsyncAtomicCounter
+from neuro_san.service.authorization.interfaces.agent_authorizer import AgentAuthorizer
 from neuro_san.service.generic.async_agent_service import AsyncAgentService
 from neuro_san.service.generic.async_agent_service_provider import AsyncAgentServiceProvider
-from neuro_san.service.http.interfaces.agent_authorizer import AgentAuthorizer
 from neuro_san.service.utils.server_context import ServerContext
 from neuro_san.service.http.logging.http_logger import HttpLogger
 

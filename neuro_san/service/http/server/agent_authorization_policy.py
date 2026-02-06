@@ -21,10 +21,10 @@ from typing import Dict
 from os import environ
 
 from neuro_san.service.authorization.factory.authorizer_factory import AuthorizerFactory
+from neuro_san.service.authorization.interfaces.agent_authorizer import AgentAuthorizer
 from neuro_san.service.authorization.interfaces.authorizer import Authorizer
 from neuro_san.service.authorization.interfaces.permission import Permission
 from neuro_san.service.generic.async_agent_service_provider import AsyncAgentServiceProvider
-from neuro_san.service.http.interfaces.agent_authorizer import AgentAuthorizer
 
 
 class AgentAuthorizationPolicy(AgentAuthorizer):
