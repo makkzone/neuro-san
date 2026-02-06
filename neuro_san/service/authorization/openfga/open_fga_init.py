@@ -197,14 +197,15 @@ class OpenFgaInit:
 
         # Find the model_info in the json file.
         for auth_model in response.authorization_models:
+
             # Look for what was specified in the env var (if anything was specified there)
             if auth_model.id == auth_model_id:
                 found_auth_model = auth_model.id
                 break
 
-            self.open_fga_client.set_authorization_model_id(auth_model.id)
-
-            found_auth_model = auth_model.id
+            # Callout to allow for self-updating authorization servers
+            if self.is_seen_auth_model(auth_model.id):
+                found_auth_model = auth_model.id
 
         return found_auth_model
 
@@ -248,3 +249,12 @@ class OpenFgaInit:
         Optional method to synchronize the OpenFGA server with any new model changes.
         """
         # Do nothing, but allow overrides for specific circumstances.
+
+    def is_seen_auth_model(self, auth_model_id: str) -> bool:
+        """
+        Optional method to allow for self-updating authorization servers
+        :param auth_model_id: The auth model id to look for
+        :return: True if the auth model was found
+        """
+        _ = auth_model_id
+        return False
