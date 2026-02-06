@@ -150,9 +150,9 @@ class OpenFgaInit:
         will be modified to use the current policy.
         """
 
-        # Find where our configuration files live relative to this one.
-        this_file_dir: str = os.path.dirname(os.path.abspath(__file__))
-        open_fga_policy_file: str = os.path.join(this_file_dir, "neuroai_model.json")
+        open_fga_policy_file: str = os.environ.get("OPEN_FGA_POLICY_FILE", "")
+        if not open_fga_policy_file:
+            raise ValueError("OPEN_FGA_POLICY_FILE env var not set")
 
         # Read the OpenFGA policy from configuration
         policy: Dict[str, Any] = {}
