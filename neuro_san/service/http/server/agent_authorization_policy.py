@@ -84,6 +84,8 @@ class AgentAuthorizationPolicy(AgentAuthorizer):
         :param metadata: metadata from the request
         :return: a list of agent names allowed for this request
         """
+        listed_agents: List[str] = self.allowed_agents.keys()
+
         # Prepare the input for the Authorizer
         actor_id: str = metadata.get(self.actor_id_metadata_key)
         actor: Dict[str, Any] = {
@@ -97,7 +99,6 @@ class AgentAuthorizationPolicy(AgentAuthorizer):
         }
 
         # Call the authorizer to see what agents are allowed
-        listed_agents: List[str] = self.allowed_agents.keys()
         authorized_agents: List[str] = self.authorizer.list(actor, self.action, resource)
         if authorized_agents:
 

@@ -42,7 +42,7 @@ class ConciergeHandler(BaseRequestHandler):
         public_storage: AgentNetworkStorage = network_storage_dict.get("public")
 
         # See what the authorizer says
-        allowed_agents: List[str] = self.agent_policy.list_agents(metadata)
+        allowed_agents: List[str] = await self.agent_policy.list_agents(metadata)
 
         try:
             data: Dict[str, Any] = {}
@@ -51,19 +51,7 @@ class ConciergeHandler(BaseRequestHandler):
 
             # Maybe remove agents if the agent_policy has something to say.
             if allowed_agents is not None:
-
-                empty: List[Dict[str, Any]] = []
-                agent_infos: List[Dict[str, Any]] = result_dict.get("agents", empty)
-                last_index: int = len(agent_infos) - 1
-
-                # Remove agents which are not allowed.
-                # Go in reverse order to preserve indexes if we remove anything.
-                agent_info: Dict[str, Any] = None
-                for index, agent_info in enumerate(reversed(agent_infos)):
-                    agent_name: str = agent_info.get("agent_name")
-                    if agent_name not in allowed_agents:
-                        result_index: int = last_index - index
-                        del result_dict["agents"][result_index]
+                self.pare_allowed_agents(allowed_agents, result_dict)
 
             # Return response to the HTTP client
             self.set_header("Content-Type", "application/json")
@@ -74,3 +62,21 @@ class ConciergeHandler(BaseRequestHandler):
         finally:
             self.do_finish()
             self.application.finish_client_request(metadata, "/api/v1/list")
+
+    def pare_allowed_agents(self, allowed_agents: List[str], result_dict: Dict[str, Any]):
+        """
+        Remove agents which are not allowed.
+        """
+
+        empty: List[Dict[str, Any]] = []
+        agent_infos: List[Dict[str, Any]] = result_dict.get("agents", empty)
+        last_index: int = len(agent_infos) - 1
+
+        # Remove agents which are not allowed.
+        # Go in reverse order to preserve indexes if we remove anything.
+        agent_info: Dict[str, Any] = None
+        for index, agent_info in enumerate(reversed(agent_infos)):
+            agent_name: str = agent_info.get("agent_name")
+            if agent_name not in allowed_agents:
+                result_index: int = last_index - index
+                del result_dict["agents"][result_index]
