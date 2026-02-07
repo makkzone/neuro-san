@@ -19,6 +19,7 @@ See class comment for details
 """
 from typing import Any
 from typing import Dict
+from typing import List
 
 from neuro_san.interfaces.concierge_session import ConciergeSession
 from neuro_san.internals.network_providers.agent_network_storage import AgentNetworkStorage
@@ -31,7 +32,7 @@ class ConciergeHandler(BaseRequestHandler):
     Handler class for neuro-san "concierge" API call.
     """
 
-    def get(self):
+    async def get(self):
         """
         Implementation of GET request handler for "concierge" API call.
         """
@@ -39,10 +40,30 @@ class ConciergeHandler(BaseRequestHandler):
         self.application.start_client_request(metadata, "/api/v1/list")
         network_storage_dict: Dict[str, AgentNetworkStorage] = self.server_context.get_network_storage_dict()
         public_storage: AgentNetworkStorage = network_storage_dict.get("public")
+
+        # See what the authorizer says
+        allowed_agents: List[str] = self.agent_policy.list_agents(metadata)
+
         try:
             data: Dict[str, Any] = {}
             session: ConciergeSession = DirectConciergeSession(public_storage, metadata=metadata)
             result_dict: Dict[str, Any] = session.list(data)
+
+            # Maybe remove agents if the agent_policy has something to say.
+            if allowed_agents is not None:
+
+                empty: List[Dict[str, Any]] = []
+                agent_infos: List[Dict[str, Any]] = result_dict.get("agents", empty)
+                last_index: int = len(agent_infos) - 1
+
+                # Remove agents which are not allowed.
+                # Go in reverse order to preserve indexes if we remove anything.
+                agent_info: Dict[str, Any] = None
+                for index, agent_info in enumerate(reversed(agent_infos)):
+                    agent_name: str = agent_info.get("agent_name")
+                    if agent_name not in allowed_agents:
+                        result_index: int = last_index - index
+                        del result_dict["agents"][result_index]
 
             # Return response to the HTTP client
             self.set_header("Content-Type", "application/json")
