@@ -51,7 +51,7 @@ class ConciergeHandler(BaseRequestHandler):
 
             # Maybe remove agents if the agent_policy has something to say.
             if allowed_agents is not None:
-                self.pare_allowed_agents(allowed_agents, result_dict)
+                result_dict = self.pare_allowed_agents(allowed_agents, result_dict)
 
             # Return response to the HTTP client
             self.set_header("Content-Type", "application/json")
@@ -63,20 +63,29 @@ class ConciergeHandler(BaseRequestHandler):
             self.do_finish()
             self.application.finish_client_request(metadata, "/api/v1/list")
 
-    def pare_allowed_agents(self, allowed_agents: List[str], result_dict: Dict[str, Any]):
+    def pare_allowed_agents(self, allowed_agents: List[str], result_dict: Dict[str, Any]) -> Dict[str, Any]:
         """
         Remove agents which are not allowed.
+
+        :param allowed_agents: A list of agent names that are allowed by the authorization system
+        :param result_dict: A dictionary version of the ConciergeResponse
+                protobuf structure. Has the following keys:
+            "agents" - the sequence of dictionaries describing available agents
+        :return: A dictionary version of the ConciergeResponse
+                protobuf structure. Has the following keys:
+            "agents" - the sequence of dictionaries describing available agents
         """
 
         empty: List[Dict[str, Any]] = []
         agent_infos: List[Dict[str, Any]] = result_dict.get("agents", empty)
-        last_index: int = len(agent_infos) - 1
 
-        # Remove agents which are not allowed.
-        # Go in reverse order to preserve indexes if we remove anything.
-        agent_info: Dict[str, Any] = None
-        for index, agent_info in enumerate(reversed(agent_infos)):
+        # Create a dictionary of agent names for quick lookup
+        agent_info_dict: Dict[str, Dict[str, Any]] = {}
+        for agent_info in agent_infos:
             agent_name: str = agent_info.get("agent_name")
-            if agent_name not in allowed_agents:
-                result_index: int = last_index - index
-                del result_dict["agents"][result_index]
+            if agent_name in allowed_agents:
+                agent_info_dict[agent_name] = agent_info
+
+        # Recreate the list of agents in the results by taking the values from the dictionary
+        result_dict["agents"] = list(agent_info_dict.values())
+        return result_dict
