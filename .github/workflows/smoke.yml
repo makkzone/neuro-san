@@ -76,7 +76,6 @@ jobs:
           AZURE_OPENAI_ENDPOINT: ${{ vars.AZURE_OPENAI_ENDPOINT }}
           OPENAI_API_VERSION: ${{ vars.OPENAI_API_VERSION }}
           AGENT_TOOL_PATH: "./neuro_san/coded_tools"
-          AGENT_MANIFEST_FILE: "./neuro_san/registries/manifest.hocon"
           PYTHONPATH: ${{ env.PYTHONPATH }}:.
         run: |
           build_scripts/server_start.sh
