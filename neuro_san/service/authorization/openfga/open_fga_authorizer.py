@@ -43,8 +43,8 @@ class OpenFgaAuthorizer(AbstractAuthorizer):
                                                                              module_name="openfga_sdk",
                                                                              install_if_missing="openfga-sdk")
 
-        self.debug: bool = environ.get("DEBUG_AUTH") is not None
-        self.fail_on_unauthorized: bool = environ.get("DEBUG_AUTH") == "hard"
+        self.debug: bool = environ.get("AGENT_DEBUG_AUTH") is not None
+        self.fail_on_unauthorized: bool = environ.get("AGENT_DEBUG_AUTH") == "hard"
 
         self.fga_client: self.openfga_sdk.sync.OpenFgaClient = fga_client
         if self.fga_client is None:
@@ -89,8 +89,8 @@ class OpenFgaAuthorizer(AbstractAuthorizer):
 
         # Useful in debugging
         if self.debug:
-            self.logger.debug("authorize(%s, %s, %s:%s)", use_actor, use_action,
-                              use_resource.get("type"), use_resource.get("id"))
+            self.logger.info("authorize(%s, %s, %s:%s)", use_actor, use_action,
+                             use_resource.get("type"), use_resource.get("id"))
 
         # Use classes from the lazily imported module to avoid extra required dependencies
         # pylint: disable=invalid-name
@@ -108,8 +108,8 @@ class OpenFgaAuthorizer(AbstractAuthorizer):
         if not authorized:
             message: str = f"Actor: {actor}   action: {action}   resource: {resource}"
             if self.debug:
-                self.logger.debug(message)
-                self.logger.debug("authorized is %s", authorized)
+                self.logger.info(message)
+                self.logger.info("authorized is %s", authorized)
 
             if self.fail_on_unauthorized:
                 # Exception useful when trying to figure out where authorization
@@ -149,7 +149,7 @@ class OpenFgaAuthorizer(AbstractAuthorizer):
         if resource.get("id") is not None:
             # We are looking for a specific id. Faster through authorize()
             if self.debug:
-                self.logger.debug("using authorize() for list()")
+                self.logger.info("using authorize() for list()")
             authorized: bool = self.authorize(actor, relation, resource)
             if authorized:
                 ids.append(str(resource.get("id")))
@@ -166,7 +166,7 @@ class OpenFgaAuthorizer(AbstractAuthorizer):
         resource_type: str = resource.get("type", "")
 
         if self.debug:
-            self.logger.debug("list(%s, %s, %s:%s)", actor_id, relation, resource_type,  resource.get("id"))
+            self.logger.info("list(%s, %s, %s:%s)", actor_id, relation, resource_type,  resource.get("id"))
 
         # Use classes from the lazily imported module to avoid extra required dependencies
         # pylint: disable=invalid-name
@@ -184,6 +184,9 @@ class OpenFgaAuthorizer(AbstractAuthorizer):
             # Results come in the format of a single string "<type>:<identifier>"
             one_id: str = one_object.split(":")[1]
             ids.append(one_id)
+
+        if self.debug:
+            self.logger.info("list length is %d", len(ids))
 
         return ids
 
@@ -301,8 +304,8 @@ class OpenFgaAuthorizer(AbstractAuthorizer):
                                    object=f"{resource_type}:{resource_id}")
 
         if self.debug:
-            self.logger.debug("Granting to %s:%s : %s on %s:%s", actor_type, actor_id,
-                              relation, resource_type, resource_id)
+            self.logger.info("Granting to %s:%s : %s on %s:%s", actor_type, actor_id,
+                             relation, resource_type, resource_id)
 
         writes: List[ClientTuple] = []
         writes.append(client_tuple)
@@ -353,8 +356,8 @@ class OpenFgaAuthorizer(AbstractAuthorizer):
                                    object=f"{resource_type}:{resource_id}")
 
         if self.debug:
-            self.logger.debug("Revoking from %s:%s : %s on %s:%s", actor_type, actor_id,
-                              relation, resource_type, resource_id)
+            self.logger.info("Revoking from %s:%s : %s on %s:%s", actor_type, actor_id,
+                             relation, resource_type, resource_id)
 
         deletes: List[ClientTuple] = []
         deletes.append(client_tuple)

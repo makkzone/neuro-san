@@ -100,7 +100,7 @@ class AgentAuthorizationPolicy(AgentAuthorizer):
 
         # Call the authorizer to see what agents are allowed
         authorized_agents: List[str] = self.authorizer.list(actor, self.action, resource)
-        if authorized_agents:
+        if authorized_agents is not None:
 
             # Authorizer specifically has something to say, so listen
             # by taking the intersection of what the authorizer allows and what exists
