@@ -76,7 +76,7 @@ class SynchronousOpenFgaClient:
         if store_name is None:
             # This allows workaday code to not worry about store names,
             # including when it is called by unit tests.
-            store_name = os.environ.get("TEST_FGA_STORE_NAME", OpenFgaInit.DEFAULT_STORE_NAME)
+            store_name = os.environ.get("AGENT_FGA_STORE_NAME", OpenFgaInit.DEFAULT_STORE_NAME)
 
         fga_client: OpenFgaClient = cls.get_instance().get_client(store_name)
         return fga_client
@@ -109,7 +109,7 @@ class SynchronousOpenFgaClient:
         if store_name is None:
             # This allows workaday code to not worry about store names,
             # including when it is called by unit tests.
-            store_name = os.environ.get("TEST_FGA_STORE_NAME", OpenFgaInit.DEFAULT_STORE_NAME)
+            store_name = os.environ.get("AGENT_FGA_STORE_NAME", OpenFgaInit.DEFAULT_STORE_NAME)
 
         # See if we have a client for the store name/thread id combo.
         map_key: str = self.get_map_key(store_name)
