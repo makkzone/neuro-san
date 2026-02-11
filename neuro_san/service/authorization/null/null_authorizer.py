@@ -50,7 +50,7 @@ class NullAuthorizer(Authorizer):
         # By default, anyone can do anything
         return True
 
-    def grant(self, actor: Dict[str, Any], relation: str, resource: Dict[str, Any]):
+    def grant(self, actor: Dict[str, Any], relation: str, resource: Dict[str, Any]) -> bool:
         """
         :param actor: The actor dictionary with the keys "type" and "id" identifying what
                       will be permitted.  Most often this is of the form:
@@ -67,11 +67,11 @@ class NullAuthorizer(Authorizer):
                             "type": "AgentNetwork",
                             "id": "hello_world"
                         }
-        :return: Nothing
+        :return: True if the grant succeeded, False if the grant already existed.
         """
-        # Do nothing, return nothing.
+        return False
 
-    def revoke(self, actor: Dict[str, Any], relation: str, resource: Dict[str, Any]):
+    def revoke(self, actor: Dict[str, Any], relation: str, resource: Dict[str, Any]) -> bool:
         """
         :param actor: The actor dictionary with the keys "type" and "id" identifying what
                       will no longer be permitted.  Most often this is of the form:
@@ -88,9 +88,9 @@ class NullAuthorizer(Authorizer):
                             "type": "AgentNetwork",
                             "id": "hello_world"
                         }
-        :return: Nothing
+        :return: True if the revoke succeeded, False if the revoke already existed.
         """
-        # Do nothing, return nothing.
+        return False
 
     def list(self, actor: Dict[str, Any], relation: str, resource: Dict[str, Any]) -> List[str]:
         """

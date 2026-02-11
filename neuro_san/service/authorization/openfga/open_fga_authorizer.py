@@ -271,7 +271,7 @@ class OpenFgaAuthorizer(AbstractAuthorizer):
 
         return retval
 
-    def grant(self, actor: Dict[str, Any], relation: str, resource: Dict[str, Any]):
+    def grant(self, actor: Dict[str, Any], relation: str, resource: Dict[str, Any]) -> bool:
         """
         :param actor: The actor dictionary with the keys "type" and "id" identifying what
                       will be permitted.  Most often this is of the form:
@@ -287,7 +287,7 @@ class OpenFgaAuthorizer(AbstractAuthorizer):
                             "type": "AgentNetwork",
                             "id": "hello_world"
                         }
-        :return: Nothing
+        :return: True if the grant succeeded, False if the grant already existed.
         """
         actor_type: str = actor.get("type", "")
         actor_id: str = actor.get("id", "")
@@ -321,9 +321,20 @@ class OpenFgaAuthorizer(AbstractAuthorizer):
         #       allowed to be specified in the *.fga DSL file.
         #   2)  the auth policy you think is being uploaded to the auth server
         #       in open_fga_init() is not the one actually landing in the server.
-        _ = self.fga_client.write(body)
+        retval: bool = True
+        try:
+            _ = self.fga_client.write(body)
+        except self.openfga_sdk.exceptions.ValidationException as err:
+            if (str(err).find("tuple to be written already existed") > 0) and self.debug:
+                self.logger.info("Grant already exists: %s:%s : %s on %s:%s",
+                                 actor_type, actor_id, relation, resource_type, resource_id)
+                retval = False
+            else:
+                raise
 
-    def revoke(self, actor: Dict[str, Any], relation: str, resource: Dict[str, Any]):
+        return retval
+
+    def revoke(self, actor: Dict[str, Any], relation: str, resource: Dict[str, Any]) -> bool:
         """
         :param actor: The actor dictionary with the keys "type" and "id" identifying what
                       will no longer be permitted.  Most often this is of the form:
@@ -339,7 +350,7 @@ class OpenFgaAuthorizer(AbstractAuthorizer):
                             "type": "AgentNetwork",
                             "id": "hello_world"
                         }
-        :return: Nothing
+        :return: True if the revoke succeeded, False if the revoke already existed.
         """
         actor_type: str = actor.get("type", "")
         actor_id: str = actor.get("id", "")
@@ -371,7 +382,18 @@ class OpenFgaAuthorizer(AbstractAuthorizer):
         #       allowed to be specified in the *.fga DSL file.
         #   2)  the auth policy you think is being uploaded to the auth server
         #       in open_fga_init() is not the one actually landing in the server.
-        _ = self.fga_client.write(body)
+        retval: bool = True
+        try:
+            _ = self.fga_client.write(body)
+        except self.openfga_sdk.exceptions.ValidationException as err:
+            if (str(err).find("tuple to be deleted did not exist") > 0) and self.debug:
+                self.logger.info("Revoke already performed: %s:%s : %s on %s:%s",
+                                 actor_type, actor_id, relation, resource_type, resource_id)
+                retval = False
+            else:
+                raise
+
+        return retval
 
     def handle_special_user_writes(self, writes: List[Any], actor: Dict[str, Any], resource: Dict[str, Any]):
         """
