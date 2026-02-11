@@ -168,7 +168,7 @@ class HttpServer(AgentAuthorizer, AgentStateListener):
                 if isinstance(startable, Startable):
                     try:
                         startable.start()
-                    except Exception as exception: # pylint: disable=broad-exception-caught
+                    except Exception as exception:  # pylint: disable=broad-exception-caught
                         self.logger.error(
                             {}, "Failed to start %s: %s",
                             startable.__class__.__name__, str(exception))
