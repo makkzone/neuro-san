@@ -53,10 +53,8 @@ class OpenFgaAuthorizer(AbstractAuthorizer):
         Initialize the client only if needed.
         """
 
-        if self.fga_client is None:
-
-            # Use the singleton to get the per-thread + per-store client
-            self.fga_client = await OpenFgaClientCache.get()
+        # Use the singleton to get the per-thread + per-store client
+        self.fga_client = await OpenFgaClientCache.get()
 
     async def authorize(self, actor: Dict[str, Any], action: str, resource: Dict[str, Any]) -> bool:
         """

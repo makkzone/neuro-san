@@ -113,18 +113,8 @@ class OpenFgaClientCache:
             # including when it is called by unit tests.
             store_name = os.environ.get("AGENT_FGA_STORE_NAME", OpenFgaInit.DEFAULT_STORE_NAME)
 
-        # See if we have a client for the store name/thread id combo.
-        map_key: str = self.get_map_key(store_name)
-        with self.lock:
-
-            fga_client: OpenFgaClient = self.client_map.get(map_key)
-            if fga_client is None:
-
-                self.logger.warning("No client for store_name %s", store_name)
-                init = OpenFgaInit()
-                fga_client = await init.initialize_client_for_store(store_name)
-
-                self.client_map[map_key] = fga_client
+        init = OpenFgaInit()
+        fga_client = await init.initialize_client_for_store(store_name)
 
         return fga_client
 
