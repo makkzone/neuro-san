@@ -48,7 +48,7 @@ class OpenFgaInit:
          and then re-use it throughout your app..."
 
     ... so this is not to be used by workaday client code.
-    Use SynchronousOpenFgaClient.get() instead.
+    Use OpenFgaClientCache.get() instead.
     """
 
     DEFAULT_STORE_NAME: str = "default"
@@ -58,7 +58,7 @@ class OpenFgaInit:
         Constructor.
 
         This is not to be used by workaday client code.
-        Use SynchronousOpenFgaClient.get() instead.
+        Use OpenFgaClientCache.get() instead.
         """
         self.open_fga_client: OpenFgaClient = None
         self.logger: Logger = getLogger(self.__class__.__name__)
