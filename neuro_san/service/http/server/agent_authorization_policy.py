@@ -70,7 +70,7 @@ class AgentAuthorizationPolicy(AgentAuthorizer):
 
         # Consult the authorizer
         is_authorized: bool = False
-        with self.authorizer as auth:
+        async with self.authorizer as auth:
             is_authorized = await auth.authorize(actor, self.allow_relation, resource)
         if not is_authorized:
             # Not authorized
@@ -102,7 +102,7 @@ class AgentAuthorizationPolicy(AgentAuthorizer):
 
         # Call the authorizer to see what agents are allowed
         authorized_agents: List[str] = None
-        with self.authorizer as auth:
+        async with self.authorizer as auth:
             authorized_agents: await auth.list(actor, self.allow_relation, resource)
 
         if authorized_agents is not None:
