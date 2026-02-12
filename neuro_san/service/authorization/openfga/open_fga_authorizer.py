@@ -22,7 +22,7 @@ from types import ModuleType
 from os import environ
 
 from neuro_san.service.authorization.interfaces.abstract_authorizer import AbstractAuthorizer
-from neuro_san.service.authorization.openfga.synchronous_open_fga_client import SynchronousOpenFgaClient
+from neuro_san.service.authorization.openfga.open_fga_client_cache import OpenFgaClientCache
 
 
 class OpenFgaAuthorizer(AbstractAuthorizer):
@@ -48,7 +48,7 @@ class OpenFgaAuthorizer(AbstractAuthorizer):
 
         self.fga_client: self.openfga_sdk.sync.OpenFgaClient = fga_client
         if self.fga_client is None:
-            self.fga_client = SynchronousOpenFgaClient.get()
+            self.fga_client = OpenFgaClientCache.get()
 
     async def authorize(self, actor: Dict[str, Any], action: str, resource: Dict[str, Any]) -> bool:
         """

@@ -30,7 +30,7 @@ from openfga_sdk.sync import OpenFgaClient
 from neuro_san.service.authorization.openfga.open_fga_init import OpenFgaInit
 
 
-class SynchronousOpenFgaClient:
+class OpenFgaClientCache:
     """
     Per the Open FGA docs here:
         https://github.com/openfga/python-sdk?tab=readme-ov-file#initializing-the-api-client
@@ -60,7 +60,7 @@ class SynchronousOpenFgaClient:
         self.logger: Logger = getLogger(self.__class__.__name__)
 
     @classmethod
-    def get_instance(cls):  # -> SynchronousOpenFgaClient
+    def _get_instance(cls) -> OpenFgaClientCache:
         """
         :return: The singleton instance of this class
         """
@@ -78,7 +78,7 @@ class SynchronousOpenFgaClient:
             # including when it is called by unit tests.
             store_name = os.environ.get("AGENT_FGA_STORE_NAME", OpenFgaInit.DEFAULT_STORE_NAME)
 
-        fga_client: OpenFgaClient = cls.get_instance().get_client(store_name)
+        fga_client: OpenFgaClient = cls._get_instance().get_client(store_name)
         return fga_client
 
     @staticmethod
@@ -180,4 +180,4 @@ class SynchronousOpenFgaClient:
 
 
 # The global singleton instance
-INSTANCE: SynchronousOpenFgaClient = SynchronousOpenFgaClient()
+INSTANCE: OpenFgaClientCache = OpenFgaClientCache()
