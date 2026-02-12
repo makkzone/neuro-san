@@ -55,6 +55,8 @@ class OpenFgaClientCache:
         Constructor
         """
 
+        # Note: Specifically using a synchronous lock here, as the idea is to
+        #       manage a per-thread mapping of OpenFgaClient objects.
         self.lock: Lock = Lock()
         self.client_map: Dict[str, OpenFgaClient] = {}
         self.logger: Logger = getLogger(self.__class__.__name__)
@@ -69,7 +71,7 @@ class OpenFgaClientCache:
         return INSTANCE
 
     @classmethod
-    def get(cls, store_name: str = None) -> OpenFgaClient:
+    await def get(cls, store_name: str = None) -> OpenFgaClient:
         """
         :return: The singleton instance of this class
         """
@@ -78,7 +80,7 @@ class OpenFgaClientCache:
             # including when it is called by unit tests.
             store_name = os.environ.get("AGENT_FGA_STORE_NAME", OpenFgaInit.DEFAULT_STORE_NAME)
 
-        fga_client: OpenFgaClient = cls._get_instance().get_client(store_name)
+        fga_client: OpenFgaClient = await cls._get_instance().get_client(store_name)
         return fga_client
 
     @staticmethod
@@ -97,7 +99,7 @@ class OpenFgaClientCache:
         map_key: str = f"Thread-{thread_id}:{store_name}"
         return map_key
 
-    def get_client(self, store_name: str = None) -> OpenFgaClient:
+    async def get_client(self, store_name: str = None) -> OpenFgaClient:
         """
         :param store_name: The store name to use for fact storage.
                 We expect workaday client code to not pass this in, but we allow

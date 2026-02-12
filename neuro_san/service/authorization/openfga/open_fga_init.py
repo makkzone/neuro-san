@@ -70,7 +70,7 @@ class OpenFgaInit:
         the first time around for any given store_name.
         """
         open_fga_client: OpenFgaClient = self.initialize_one_client()
-        with open_fga_client as client:
+        async with open_fga_client as client:
             await self.maybe_initialize_store(client, store_name)
             await self.prepare_policy(client)
             await self.sync(client)
