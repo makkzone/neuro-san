@@ -44,7 +44,8 @@ class OpenFgaAuthorizer(AbstractAuthorizer):
                                                                              module_name="openfga_sdk",
                                                                              install_if_missing="openfga-sdk")
 
-        self.debug: bool = environ.get("AGENT_DEBUG_AUTH") is not None
+        debug_auth: str = environ.get("AGENT_DEBUG_AUTH")
+        self.debug: bool = debug_auth is not None and len(debug_auth) > 0 and debug_auth != "false"
         self.fail_on_unauthorized: bool = environ.get("AGENT_DEBUG_AUTH") == "hard"
 
         # Note: we don't initialize the client because constructors cannot be async

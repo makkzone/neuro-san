@@ -53,7 +53,7 @@ class OpenFgaStoreCache:
     lock = Lock()
 
     # Store name to use when none is specified by the caller.
-    DEFAULT_STORE_NAME: str = environ.get("AGENT_FGA_STORE_NAME", "default")
+    DEFAULT_STORE_NAME: str = environ.get("FGA_STORE_NAME", "default")
 
     @classmethod
     async def get_client(cls, store_name: str = None) -> OpenFgaClient:
