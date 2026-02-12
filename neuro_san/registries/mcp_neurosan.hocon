@@ -29,7 +29,7 @@
         ]
     },
     "llm_config": {
-        "model_name": "gpt-5.2"
+        "model_name": "gpt-4o",
     },
     "tools": [
         # These tool definitions do not have to be in any particular order
@@ -45,6 +45,8 @@
 Then answer with a JSON message that has two keys:
 1. An "answer" key whose value has the answer to the question
 2. A "running_cost" key whose value is the running cost or accumulated fee.
+
+If there is no tool, respond with "Error: cannot connect to `music_nerd_pro` via MCP protocal. Please check the server status and manifest file.".
 """,
             "function": {
                 "description": "Answer music-related questions."
