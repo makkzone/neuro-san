@@ -17,10 +17,12 @@
 from typing import Any
 from typing import Dict
 
-from logging import getLogger
-from logging import Logger
+import aiofiles
 import json
 import os
+
+from logging import getLogger
+from logging import Logger
 
 from openfga_sdk import ClientConfiguration
 from openfga_sdk.credentials import CredentialConfiguration
@@ -175,7 +177,7 @@ class OpenFgaInit:
 
         # Read the OpenFGA policy from configuration
         policy: Dict[str, Any] = {}
-        with open(open_fga_policy_file, "r", encoding="utf-8") as policy_file:
+        with aiofiles.open(open_fga_policy_file, "r", encoding="utf-8") as policy_file:
             policy = json.load(policy_file)
 
         found_auth_model: str = await self.find_auth_model(open_fga_client, policy)
