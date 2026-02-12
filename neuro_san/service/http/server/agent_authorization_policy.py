@@ -48,7 +48,7 @@ class AgentAuthorizationPolicy(AgentAuthorizer):
         self.actor_key: str = environ.get("AGENT_AUTHORIZER_ACTOR_KEY", "User")
         self.actor_id_metadata_key: str = environ.get("AGENT_AUTHORIZER_ACTOR_ID_METADATA_KEY", "user_id")
         self.resource_key: str = environ.get("AGENT_AUTHORIZER_RESOURCE_KEY", "AgentNetwork")
-        self.action: str = environ.get("AGENT_AUTHORIZER_ALLOW_ACTION", Permission.READ.value)
+        self.allow_relation: str = environ.get("AGENT_AUTHORIZER_ALLOW_RELATION", Permission.READ.value)
 
     async def allow_agent(self, agent_name: str, metadata: Dict[str, Any]) -> AsyncAgentServiceProvider:
         """
@@ -69,7 +69,7 @@ class AgentAuthorizationPolicy(AgentAuthorizer):
         }
 
         # Consult the authorizer
-        is_authorized: bool = await self.authorizer.authorize(actor, self.action, resource)
+        is_authorized: bool = await self.authorizer.authorize(actor, self.allow_relation, resource)
         if not is_authorized:
             # Not authorized
             return None
@@ -99,7 +99,7 @@ class AgentAuthorizationPolicy(AgentAuthorizer):
         }
 
         # Call the authorizer to see what agents are allowed
-        authorized_agents: List[str] = await self.authorizer.list(actor, self.action, resource)
+        authorized_agents: List[str] = await self.authorizer.list(actor, self.allow_relation, resource)
         if authorized_agents is not None:
 
             # Authorizer specifically has something to say, so listen
