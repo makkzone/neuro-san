@@ -273,5 +273,5 @@ class OpenFgaInit:
         :param auth_model_id: The auth model id to look for
         :return: True if the auth model was found
         """
-        _ = auth_model_id
+        _ = open_fga_client, auth_model_id
         return False

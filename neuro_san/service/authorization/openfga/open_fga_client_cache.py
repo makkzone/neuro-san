@@ -71,7 +71,7 @@ class OpenFgaClientCache:
         return INSTANCE
 
     @classmethod
-    await def get(cls, store_name: str = None) -> OpenFgaClient:
+    async def get(cls, store_name: str = None) -> OpenFgaClient:
         """
         :return: The singleton instance of this class
         """
