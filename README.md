@@ -42,6 +42,23 @@ Neuro SAN also offers:
     * an Assessor app which classifies the modes of failure for your agents, given a data-driven test case
 * MCP protocol API
 
+## Quick Start
+
+**🚀 For the easiest way to get started, use our automated startup scripts!**
+
+See the [startup/README.md](startup/README.md) for simple one-command scripts that handle all setup automatically:
+- **macOS/Linux:** `./startup/start-server.sh`
+- **Windows:** `startup\start-server.bat`
+
+These scripts automatically:
+- Create and activate virtual environment
+- Install all dependencies
+- Set up environment variables
+- Enable CORS for web applications
+- Launch the server
+
+For manual setup, continue with the instructions below.
+
 ## Running client and server
 
 ### Prep
