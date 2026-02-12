@@ -80,6 +80,7 @@ class McpToolsProcessor:
             }
         }
 
+    # pylint: disable=too-many-return-statements
     async def call_tool(self, request_id, metadata: Dict[str, Any],
                         tool_name: str,
                         prompt: Dict[str, Any],
@@ -102,10 +103,17 @@ class McpToolsProcessor:
         # pylint: disable=too-many-arguments
         # pylint: disable=too-many-positional-arguments
 
-        service_provider: AsyncAgentServiceProvider = await self.agent_policy.allow_agent(tool_name, metadata)
+        is_authorized: bool = False
+        service_provider: AsyncAgentServiceProvider = None
+        is_authorized, service_provider = await self.agent_policy.allow_agent(tool_name, metadata)
+
         if service_provider is None:
             # No such tool is found:
             return McpErrorsUtil.get_tool_error(request_id, f"Tool not found: {tool_name}")
+
+        if not is_authorized:
+            return McpErrorsUtil.get_tool_error(request_id, f"Tool not authorized: {tool_name}")
+
         service: AsyncAgentService = service_provider.get_service()
         if not service.is_mcp_tool():
             # Service is not allowed to be called as MCP tool:
@@ -196,9 +204,14 @@ class McpToolsProcessor:
         return call_result
 
     async def _get_tool_description(self, agent_name: str, metadata: Dict[str, Any]) -> Dict[str, Any]:
-        service_provider: AsyncAgentServiceProvider = await self.agent_policy.allow_agent(agent_name, metadata)
-        if service_provider is None:
+
+        is_authorized: bool = False
+        service_provider: AsyncAgentServiceProvider = None
+        is_authorized, service_provider = await self.agent_policy.allow_agent(agent_name, metadata)
+
+        if service_provider is None or not is_authorized:
             return None
+
         service: AsyncAgentService = service_provider.get_service()
         function_dict: Dict[str, Any] = await service.function({}, metadata)
         tool_description: str = function_dict.get("function", {}).get("description", "")

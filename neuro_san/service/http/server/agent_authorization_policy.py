@@ -19,6 +19,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Set
+from typing import Tuple
 
 from os import environ
 
@@ -50,11 +51,13 @@ class AgentAuthorizationPolicy(AgentAuthorizer):
         self.resource_key: str = environ.get("AGENT_AUTHORIZER_RESOURCE_KEY", "AgentNetwork")
         self.allow_relation: str = environ.get("AGENT_AUTHORIZER_ALLOW_RELATION", Permission.READ.value)
 
-    async def allow_agent(self, agent_name: str, metadata: Dict[str, Any]) -> AsyncAgentServiceProvider:
+    async def allow_agent(self, agent_name: str, metadata: Dict[str, Any]) -> Tuple[bool, AsyncAgentServiceProvider]:
         """
         :param agent_name: name of an agent
-        :return: instance of AsyncAgentService if routing requests is allowed for this agent;
-                 None otherwise
+        :return: a tuple of:
+                * True if metadata says user is authrorized to route requests is allowed for this agent
+                  False otherwise
+                * instance of AsyncAgentService if it exists.  None otherwise
         """
         # Prepare the input for the Authorizer
         actor_id: str = metadata.get(self.actor_id_metadata_key)
@@ -72,13 +75,10 @@ class AgentAuthorizationPolicy(AgentAuthorizer):
         is_authorized: bool = False
         async with self.authorizer as auth:
             is_authorized = await auth.authorize(actor, self.allow_relation, resource)
-        if not is_authorized:
-            # Not authorized
-            return None
 
         # The network still needs to exist.
         service_provider: AsyncAgentServiceProvider = self.allowed_agents.get(agent_name)
-        return service_provider
+        return is_authorized, service_provider
 
     async def list_agents(self, metadata: Dict[str, Any]) -> List[str]:
         """
