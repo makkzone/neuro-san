@@ -14,16 +14,11 @@
 # limitations under the License.
 #
 # END COPYRIGHT
-from __future__ import annotations
 
 from typing import Dict
 
-from logging import getLogger
-from logging import Logger
-import os
-
-from threading import get_ident
-from threading import Lock  # DEF need async
+from os import environ
+from threading import Lock
 
 from openfga_sdk.client.client import OpenFgaClient
 
@@ -50,25 +45,15 @@ class OpenFgaClientCache:
     real code would use.
     """
 
-    def __init__(self):
-        """
-        Constructor
-        """
+    # A mapping of store names (like we get in the env var)
+    # to store ids (like we get back from the OpenFGA server to initialize clients with).
+    store_name_to_id: Dict[str, str] = {}
 
-        # Note: Specifically using a synchronous lock here, as the idea is to
-        #       manage a per-thread mapping of OpenFgaClient objects.
-        self.lock: Lock = Lock()
-        self.client_map: Dict[str, OpenFgaClient] = {}
-        self.logger: Logger = getLogger(self.__class__.__name__)
+    # Threaded lock - on purpose even though async access is used
+    lock = Lock()
 
-    @classmethod
-    def _get_instance(cls) -> OpenFgaClientCache:
-        """
-        :return: The singleton instance of this class
-        """
-        # pylint: disable=global-variable-not-assigned
-        global INSTANCE     # noqa: F824
-        return INSTANCE
+    # Store name to use when none is specified by the caller.
+    DEFAULT_STORE_NAME: str = environ.get("AGENT_FGA_STORE_NAME", "default")
 
     @classmethod
     async def get(cls, store_name: str = None) -> OpenFgaClient:
@@ -78,28 +63,13 @@ class OpenFgaClientCache:
         if store_name is None:
             # This allows workaday code to not worry about store names,
             # including when it is called by unit tests.
-            store_name = os.environ.get("AGENT_FGA_STORE_NAME", OpenFgaInit.DEFAULT_STORE_NAME)
+            store_name = OpenFgaClientCache.DEFAULT_STORE_NAME
 
-        fga_client: OpenFgaClient = await cls._get_instance().get_client(store_name)
+        fga_client: OpenFgaClient = await cls.get_client(store_name)
         return fga_client
 
-    @staticmethod
-    def get_map_key(store_name: str) -> str:
-        """
-        Generate a key into the client map for the given store name.
-
-        OpenFGA recommends that we only initialize a single client for any app,
-        but they do not talk about multithreaded apps at all. Looking in their
-        client, it is not jumping out at me that it is thread-safe, so we allow
-        one client per thread for the PMD Server via this key-generation method.
-
-        :return: A client map key for the store name given the thread.
-        """
-        thread_id: int = get_ident()
-        map_key: str = f"Thread-{thread_id}:{store_name}"
-        return map_key
-
-    async def get_client(self, store_name: str = None) -> OpenFgaClient:
+    @classmethod
+    async def get_client(cls, store_name: str = None) -> OpenFgaClient:
         """
         :param store_name: The store name to use for fact storage.
                 We expect workaday client code to not pass this in, but we allow
@@ -111,66 +81,55 @@ class OpenFgaClientCache:
         if store_name is None:
             # This allows workaday code to not worry about store names,
             # including when it is called by unit tests.
-            store_name = os.environ.get("AGENT_FGA_STORE_NAME", OpenFgaInit.DEFAULT_STORE_NAME)
+            store_name = OpenFgaClientCache.DEFAULT_STORE_NAME
 
-        init = OpenFgaInit()
-        fga_client = await init.initialize_client_for_store(store_name)
+        store_id: str = OpenFgaClientCache.store_name_to_id.get(store_name)
+
+        if store_id is None:
+            # Note: Synchronous lock is required here
+            init = OpenFgaInit()
+            with OpenFgaClientCache.lock:
+                store_id = await init.initialize_store(store_name)
+                OpenFgaClientCache.store_name_to_id[store_name] = store_id
+
+        fga_client: OpenFgaClient = OpenFgaInit.initialize_one_client(store_id=store_id)
 
         return fga_client
 
-    def remove_for_testing(self, store_name: str, remove_from_map: bool = True):
+    @classmethod
+    def _remove_key_for_testing(cls, store_name: str):
         """
-        Removes a store for testing purposes only.
+        Removes a store_name key for testing purposes only.
 
         :param store_name: The store name to use for fact storage.
-        :param remove_from_map: When True (the default) the entry will be
-                removed from the store-name/thread map.
-        """
-        # See if we have a client for the store
-        map_key: str = self.get_map_key(store_name)
-        with self.lock:
-            self._remove_key_for_testing(map_key, remove_from_map)
-
-    def _remove_key_for_testing(self, map_key: str, remove_from_map: bool):
-        """
-        Removes a map key for testing purposes only.
-
-        :param map_key: The store name to use for fact storage.
         :param remove_from_map: When True the entry will be
                 removed from the store-name/thread map.
         """
 
         # Do not hold the lock as the caller will be holding for us.
-        fga_client: OpenFgaClient = self.client_map.get(map_key)
-
-        if fga_client is not None:
+        store_id: str = OpenFgaClientCache.store_name_to_id.get(store_name)
+        if store_id is not None:
 
             # Do not actually remove the default store as that is what the app
             # will be using. Remove any other store for testing though.
-            if OpenFgaInit.DEFAULT_STORE_NAME not in map_key:
-                OpenFgaInit.remove_store_for_testing(fga_client)
+            if OpenFgaClientCache.DEFAULT_STORE_NAME != store_name:
+                del OpenFgaClientCache.store_name_to_id[store_name]
 
-            fga_client.close()
-            if remove_from_map:
-                del self.client_map[map_key]
-
-    def reset_for_testing(self):
+    @classmethod
+    def reset_for_testing(cls):
         """
         Reset the instance for testing purposes only.
         """
-        with self.lock:
+        with OpenFgaClientCache.lock:
 
-            if self.client_map is not None and len(self.client_map) > 0:
+            if len(OpenFgaClientCache.store_name_to_id) > 0:
 
                 # Close all the clients registered in the map
                 # Need to add remove_from_map=False or else will get this error:
                 #        "RuntimeError: dictionary changed size during iteration"
-                for map_key in self.client_map:
-                    self._remove_key_for_testing(map_key, remove_from_map=False)
+                # pylint: disable=consider-iterating-dictionary
+                for store_name in cls.store_name_to_id.keys():
+                    cls._remove_store_name_for_testing(store_name)
 
                 # Clear the map separately
-                self.client_map = {}
-
-
-# The global singleton instance
-INSTANCE: OpenFgaClientCache = OpenFgaClientCache()
+                cls.store_name_to_id = {}

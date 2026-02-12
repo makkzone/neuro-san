@@ -54,8 +54,6 @@ class OpenFgaInit:
     Use OpenFgaClientCache.get() instead.
     """
 
-    DEFAULT_STORE_NAME: str = "default"
-
     def __init__(self):
         """
         Constructor.
@@ -65,15 +63,15 @@ class OpenFgaInit:
         """
         self.logger: Logger = getLogger(self.__class__.__name__)
 
-    async def initialize_client_for_store(self, store_name: str) -> OpenFgaClient:
+    async def initialize_store(self, store_name: str) -> str:
         """
-        Initialize a client for general usage.
+        Initialize a store for general usage.
         This might involve initializing a whole bunch of other stuff if the OpenFGA
         infrastructure has not yet been set up and so is expected to take awhile
         the first time around for any given store_name.
         """
-        open_fga_client: OpenFgaClient = self.initialize_one_client()
         store_id: str = None
+        open_fga_client: OpenFgaClient = self.initialize_one_client(store_id=store_id)
         async with open_fga_client as client:
             open_fga_client, store_id = await self.maybe_initialize_store(client, store_name)
 
@@ -81,8 +79,7 @@ class OpenFgaInit:
             await self.prepare_policy(client)
             await self.sync(client)
 
-        open_fga_client = self.initialize_one_client(store_id=store_id)
-        return open_fga_client
+        return store_id
 
     @staticmethod
     def initialize_one_client(store_id: str = None, model_id: str = None) -> OpenFgaClient:
