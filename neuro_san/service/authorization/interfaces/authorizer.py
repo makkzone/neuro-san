@@ -14,6 +14,9 @@
 # limitations under the License.
 #
 # END COPYRIGHT
+
+from __future__ import annotations
+
 from typing import Any
 from typing import Dict
 from typing import List
@@ -24,6 +27,18 @@ class Authorizer:
     An interface for authorization.
     This is based on what we need from what packages like OpenFGA or Oso provide.
     """
+
+    async def __aenter__(self) -> Authorizer:
+        """
+        Opens a scoped session with this Authorizer.
+        """
+        raise NotImplementedError
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+        """
+        Closes a scoped session with this Authorizer.
+        """
+        raise NotImplementedError
 
     async def authorize(self, actor: Dict[str, Any], action: str, resource: Dict[str, Any]) -> bool:
         """

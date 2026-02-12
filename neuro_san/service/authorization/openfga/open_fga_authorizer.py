@@ -22,6 +22,7 @@ from types import ModuleType
 from os import environ
 
 from neuro_san.service.authorization.interfaces.abstract_authorizer import AbstractAuthorizer
+from neuro_san.service.authorization.interfaces.authorizer import Authorizer
 from neuro_san.service.authorization.openfga.open_fga_client_cache import OpenFgaClientCache
 
 
@@ -46,15 +47,27 @@ class OpenFgaAuthorizer(AbstractAuthorizer):
         self.debug: bool = environ.get("AGENT_DEBUG_AUTH") is not None
         self.fail_on_unauthorized: bool = environ.get("AGENT_DEBUG_AUTH") == "hard"
 
+        # Note: we don't initialize the client because constructors cannot be async
+        # This is what we use aenter() and aexit() for.
         self.fga_client: self.openfga_sdk.client.client.OpenFgaClient = fga_client
 
-    async def maybe_init_client(self):
+    async def __aenter__(self) -> Authorizer:
         """
-        Initialize the client only if needed.
+        Opens a scoped session with an Authorizer.
         """
+        if self.fga_client is not None:
+            await self.fga_client.close()
 
-        # Use the singleton to get the per-thread + per-store client
+        # Open a new client
         self.fga_client = await OpenFgaClientCache.get()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+        """
+        Closes a scoped session with an Authorizer.
+        """
+        await self.fga_client.close()
+        self.fga_client = None
 
     async def authorize(self, actor: Dict[str, Any], action: str, resource: Dict[str, Any]) -> bool:
         """
@@ -75,8 +88,6 @@ class OpenFgaAuthorizer(AbstractAuthorizer):
         :return: True if the actor is allowed to take the requested action on the resource.
                  False otherwise.
         """
-
-        await self.maybe_init_client()
 
         # Guilty until proven innocent
         authorized: bool = False
@@ -111,9 +122,9 @@ class OpenFgaAuthorizer(AbstractAuthorizer):
                                            relation=use_action,
                                            object=f"{use_resource.get('type')}:{use_resource.get('id')}")
 
-        async with self.fga_client as client:
-            check_response: CheckResponse = await client.check(check_request)
-            authorized = check_response.allowed
+        # No async with here, as that would close the client
+        check_response: CheckResponse = await self.fga_client.check(check_request)
+        authorized = check_response.allowed
 
         if not authorized:
             message: str = f"Actor: {actor}   action: {action}   resource: {resource}"
@@ -153,8 +164,6 @@ class OpenFgaAuthorizer(AbstractAuthorizer):
                  An empty return list implies that the actor has access to no objects
                  of the given resource type.
         """
-        await self.maybe_init_client()
-
         # Initialize a return value
         ids: List[str] = []
 
@@ -191,9 +200,8 @@ class OpenFgaAuthorizer(AbstractAuthorizer):
                                         relation=relation,
                                         type=resource_type)
 
-        response: ListObjectsResponse = None
-        async with self.fga_client as client:
-            response = await client.list_objects(body, options)
+        # No async with here, as that would close the client
+        response: ListObjectsResponse = await self.fga_client.list_objects(body, options)
 
         for one_object in response.objects:
             # Results come in the format of a single string "<type>:<identifier>"
@@ -230,8 +238,6 @@ class OpenFgaAuthorizer(AbstractAuthorizer):
         :return: A list of relations (which can be None or empty) that the actor
                 has the given relation with.
         """
-        await self.maybe_init_client()
-
         # Formulate the user specification for the request
         actor_type: str = ""
         actor_id: str = ""
@@ -262,9 +268,8 @@ class OpenFgaAuthorizer(AbstractAuthorizer):
                                    relation=relation,
                                    object=request_object)
 
-        response: ReadResponse = None
-        async with self.fga_client as client:
-            response = await client.read(body, options)
+        # No async with here, as that would close the client
+        response: ReadResponse = await self.fga_client.read(body, options)
 
         # Process the response
         retval: List[str] = []
@@ -308,8 +313,6 @@ class OpenFgaAuthorizer(AbstractAuthorizer):
                         }
         :return: True if the grant succeeded, False if the grant already existed.
         """
-        await self.maybe_init_client()
-
         actor_type: str = actor.get("type", "")
         actor_id: str = actor.get("id", "")
         resource_type: str = resource.get("type", "")
@@ -344,8 +347,8 @@ class OpenFgaAuthorizer(AbstractAuthorizer):
         #       in open_fga_init() is not the one actually landing in the server.
         retval: bool = True
         try:
-            async with self.fga_client as client:
-                _ = await client.write(body)
+            # No async with here, as that would close the client
+            _ = await self.fga_client.write(body)
 
         except self.openfga_sdk.exceptions.ValidationException as err:
             if (str(err).find("tuple to be written already existed") > 0) and self.debug:
@@ -375,8 +378,6 @@ class OpenFgaAuthorizer(AbstractAuthorizer):
                         }
         :return: True if the revoke succeeded, False if the revoke already existed.
         """
-        await self.maybe_init_client()
-
         actor_type: str = actor.get("type", "")
         actor_id: str = actor.get("id", "")
         resource_type: str = resource.get("type", "")
@@ -409,8 +410,8 @@ class OpenFgaAuthorizer(AbstractAuthorizer):
         #       in open_fga_init() is not the one actually landing in the server.
         retval: bool = True
         try:
-            async with self.fga_client as client:
-                _ = await client.write(body)
+            # No async with here, as that would close the client
+            _ = await self.fga_client.write(body)
 
         except self.openfga_sdk.exceptions.ValidationException as err:
             if (str(err).find("tuple to be deleted did not exist") > 0) and self.debug:

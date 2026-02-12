@@ -18,10 +18,10 @@ from typing import Any
 from typing import Dict
 from typing import List
 
-from neuro_san.service.authorization.interfaces.authorizer import Authorizer
+from neuro_san.service.authorization.interfaces.abstract_authorizer import AbstractAuthorizer
 
 
-class NullAuthorizer(Authorizer):
+class NullAuthorizer(AbstractAuthorizer):
     """
     An interface for authorization.
     This is based on what we need from what packages like OpenFGA or Oso provide.
@@ -116,34 +116,6 @@ class NullAuthorizer(Authorizer):
         :return: A list of resource ids that the actor has the given relation with.
                  An empty return list implies that the actor has access to no objects
                  of the given resource type.
-        """
-        # Return None indicating some other mechanism should be used
-        return None
-
-    async def query(self, actor: Dict[str, Any], relation: str, resource: Dict[str, Any]) -> List[str]:
-        """
-        Instead of a boolean answer from authorize() above, this method gives a list
-        of resources of the given resource type (in the dict) that the actor has the
-        *direct* given relation to.  This does not take authorization policy graphs
-        into account.
-
-        :param actor: The actor dictionary with the keys "type" and "id" identifying what
-                      will be permitted.  Most often this is of the form:
-                        {
-                            "type": "User",
-                            "id": "<username>"
-                        }
-        :param relation: The relation for which the user will be permitted.
-                     Most often this is one of the strings from the Role enum.
-
-        :param resource: The resource dictionary with the keys "type" and "id" identifying
-                      just what is to be authorized for use.  For instance:
-                        {
-                            "type": "AgentNetwork",
-                            "id": "hello_world"
-                        }
-        :return: A list of relations (which can be None or empty) that the actor
-                has the given relation with.
         """
         # Return None indicating some other mechanism should be used
         return None

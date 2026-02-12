@@ -38,6 +38,18 @@ class AbstractAuthorizer(Authorizer):
         self.resolver: Resolver = Resolver()
         self.logger: Logger = getLogger(self.__class__.__name__)
 
+    async def __aenter__(self) -> Authorizer:
+        """
+        Opens a scoped session with this Authorizer.
+        """
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+        """
+        Closes a scoped session with this Authorizer.
+        """
+        # Do nothing
+
     async def authorize(self, actor: Dict[str, Any], action: str, resource: Dict[str, Any]) -> bool:
         """
         :param actor: The actor dictionary with the keys "type" and "id" identifying what
