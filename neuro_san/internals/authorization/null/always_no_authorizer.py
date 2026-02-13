@@ -18,37 +18,13 @@ from typing import Any
 from typing import Dict
 from typing import List
 
-from logging import getLogger
-from logging import Logger
-
-from leaf_common.config.resolver import Resolver
-
-from neuro_san.service.authorization.interfaces.authorizer import Authorizer
+from neuro_san.internals.authorization.interfaces.abstract_authorizer import AbstractAuthorizer
 
 
-class AbstractAuthorizer(Authorizer):
+class AlwaysNoAuthorizer(AbstractAuthorizer):
     """
-    Partial Authorizer implementation that allows for late-binding via a resolver.
+    Implementation of the Authorizer interface that lets no requests through.
     """
-
-    def __init__(self):
-        """
-        Constructor.
-        """
-        self.resolver: Resolver = Resolver()
-        self.logger: Logger = getLogger(self.__class__.__name__)
-
-    async def __aenter__(self) -> Authorizer:
-        """
-        Opens a scoped session with this Authorizer.
-        """
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
-        """
-        Closes a scoped session with this Authorizer.
-        """
-        # Do nothing
 
     async def authorize(self, actor: Dict[str, Any], action: str, resource: Dict[str, Any]) -> bool:
         """
@@ -70,7 +46,8 @@ class AbstractAuthorizer(Authorizer):
         :return: True if the actor is allowed to take the requested action on the resource.
                  False otherwise.
         """
-        raise NotImplementedError
+        # By default, no one can do anything
+        return False
 
     async def grant(self, actor: Dict[str, Any], relation: str, resource: Dict[str, Any]) -> bool:
         """
@@ -91,7 +68,6 @@ class AbstractAuthorizer(Authorizer):
                         }
         :return: True if the grant succeeded, False if the grant already existed.
         """
-        # Having this interface is more for completeness than fulfilling Neuro SAN server functionality
         return False
 
     async def revoke(self, actor: Dict[str, Any], relation: str, resource: Dict[str, Any]) -> bool:
@@ -113,7 +89,6 @@ class AbstractAuthorizer(Authorizer):
                         }
         :return: True if the revoke succeeded, False if the revoke already existed.
         """
-        # Having this interface is more for completeness than fulfilling Neuro SAN server functionality
         return False
 
     async def list(self, actor: Dict[str, Any], relation: str, resource: Dict[str, Any]) -> List[str]:
@@ -141,33 +116,6 @@ class AbstractAuthorizer(Authorizer):
                  An empty return list implies that the actor has access to no objects
                  of the given resource type.
         """
-        raise NotImplementedError
-
-    async def query(self, actor: Dict[str, Any], relation: str, resource: Dict[str, Any]) -> List[str]:
-        """
-        Instead of a boolean answer from authorize() above, this method gives a list
-        of resources of the given resource type (in the dict) that the actor has the
-        *direct* given relation to.  This does not take authorization policy graphs
-        into account.
-
-        :param actor: The actor dictionary with the keys "type" and "id" identifying what
-                      will be permitted.  Most often this is of the form:
-                        {
-                            "type": "User",
-                            "id": "<username>"
-                        }
-        :param relation: The relation for which the user will be permitted.
-                     Most often this is one of the strings from the Role enum.
-
-        :param resource: The resource dictionary with the keys "type" and "id" identifying
-                      just what is to be authorized for use.  For instance:
-                        {
-                            "type": "AgentNetwork",
-                            "id": "hello_world"
-                        }
-        :return: A list of relations (which can be None or empty) that the actor
-                has the given relation with.
-        """
-        # Return None indicating some other mechanism should be used
-        # Having this interface is more for completeness than fulfilling Neuro SAN server functionality
-        return None
+        # Indicate no access to anything
+        retval: List[str] = []
+        return retval
