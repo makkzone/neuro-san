@@ -63,6 +63,7 @@ class McpToolsProcessor:
         :param metadata: http-level request metadata;
         :return: json dictionary with tools list in MCP format
         """
+        # See which agents the user has access to per authorization policy
         authorized_agents: List[str] = await self.agent_policy.list_agents(metadata)
 
         public_storage: AgentNetworkStorage = self.network_storage_dict.get("public")
