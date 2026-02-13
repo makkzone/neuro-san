@@ -294,7 +294,7 @@ ENV AGENT_MCP_ONLY="false"
 # When not set (the default) the server uses a null implementation for the Authorizer
 # effectively letting all requests for all users through.
 # We offer the following implementations:
-#   neuro_san.service.authorization.openfga.open_fga_authorizer.OpenFgaAuthorizer
+#   neuro_san.internals.authorization.openfga.open_fga_authorizer.OpenFgaAuthorizer
 ENV AGENT_AUTHORIZER=""
 
 # The request metadata field to use as the actor id for authorization
