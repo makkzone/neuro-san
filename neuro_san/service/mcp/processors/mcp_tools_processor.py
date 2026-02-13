@@ -63,9 +63,16 @@ class McpToolsProcessor:
         :param metadata: http-level request metadata;
         :return: json dictionary with tools list in MCP format
         """
+        authorized_agents: List[str] = await self.agent_policy.list_agents(metadata)
+
         public_storage: AgentNetworkStorage = self.network_storage_dict.get("public")
         tools_description: List[Dict[str, Any]] = []
         for agent_name in public_storage.get_agent_names():
+
+            # Skip agents that are not authorized
+            if agent_name not in authorized_agents:
+                continue
+
             provider: AgentNetworkProvider = public_storage.get_agent_network_provider(agent_name)
             if provider is not None:
                 agent_network: AgentNetwork = provider.get_agent_network()
