@@ -291,9 +291,11 @@ ENV AGENT_MCP_ONLY="false"
 #
 
 # What class neuro-san server should use for authorization
-# When not set (the default) the server uses a null implementation for the Authorizer
-# effectively letting all requests for all users through.
+# When not set (the default) the server uses an implementation for the Authorizer
+# that effectively lets all requests for all users through.
 # We offer the following implementations:
+#   neuro_san.internals.authorization.null.always_yes_authorizer.AlwaysYesAuthorizer (default)
+#   neuro_san.internals.authorization.null.always_no_authorizer.AlwaysNoAuthorizer
 #   neuro_san.internals.authorization.openfga.open_fga_authorizer.OpenFgaAuthorizer
 ENV AGENT_AUTHORIZER=""
 
