@@ -17,26 +17,27 @@ cd /d "%PROJECT_DIR%"
 echo Project directory: %PROJECT_DIR%
 echo.
 
-REM Check if virtual environment exists
-if not exist "venv" if not exist ".venv" (
-    echo Virtual environment not found!
-    echo Creating virtual environment...
-    python -m venv .venv
-    if errorlevel 1 (
-        echo Failed to create virtual environment
-        pause
-        exit /b 1
-    )
-    echo Virtual environment created
-    echo.
+REM Check if virtual environment exists and recreate if needed
+if exist ".venv" (
+    echo Existing virtual environment found, removing to avoid outdated dependencies...
+    rmdir /s /q .venv
+)
+if exist "venv" (
+    rmdir /s /q venv
 )
 
-REM Activate virtual environment
-if exist ".venv" (
-    set VENV_DIR=.venv
-) else (
-    set VENV_DIR=venv
+echo Creating virtual environment...
+python -m venv .venv
+if errorlevel 1 (
+    echo Failed to create virtual environment
+    pause
+    exit /b 1
 )
+echo Virtual environment created
+echo.
+
+REM Activate virtual environment
+set VENV_DIR=.venv
 
 echo Activating virtual environment...
 call "%VENV_DIR%\Scripts\activate.bat"
@@ -70,25 +71,33 @@ if errorlevel 1 (
 )
 echo.
 
-REM Check for API keys
-if not defined OPENAI_API_KEY (
-    echo WARNING: OPENAI_API_KEY environment variable is not set!
-    echo Some features may not work without API keys.
-    echo Set it with: set OPENAI_API_KEY=your-key-here
-    echo.
-)
-
 REM Enable CORS headers for web applications
 set AGENT_ALLOW_CORS_HEADERS=1
 echo CORS headers enabled
 echo.
 
+REM Check if port is already in use
+if not defined AGENT_HTTP_PORT set AGENT_HTTP_PORT=8080
+netstat -ano | findstr ":%AGENT_HTTP_PORT%" | findstr "LISTENING" >nul 2>&1
+if not errorlevel 1 (
+    echo ERROR: Port %AGENT_HTTP_PORT% is already in use!
+    echo.
+    echo To see what's using the port:
+    echo   netstat -ano ^| findstr :%AGENT_HTTP_PORT%
+    echo.
+    echo To stop the process, find the PID and run:
+    echo   taskkill /PID ^<PID^> /F
+    echo.
+    pause
+    exit /b 1
+)
+
 REM Start the server
 echo ===============================================
-echo   Starting Neuro-SAN Server on port 8080
+echo   Starting Neuro SAN Server on port %AGENT_HTTP_PORT%
 echo ===============================================
 echo.
-echo Server will be available at: http://localhost:8080
+echo Server will be available at: http://localhost:%AGENT_HTTP_PORT%
 echo Press Ctrl+C to stop the server
 echo.
 

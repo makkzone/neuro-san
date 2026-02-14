@@ -1,11 +1,11 @@
 @echo off
-REM Neuro-SAN Client Startup Script for Windows
-REM This script starts the neuro-san CLI client
+REM Neuro SAN Client quick start Script for Windows
+REM This script starts the Neuro SAN CLI client
 
 setlocal enabledelayedexpansion
 
 echo ===============================================
-echo   Neuro-SAN Client Startup
+echo   Neuro SAN Client quick start
 echo ===============================================
 echo.
 

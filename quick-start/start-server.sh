@@ -19,21 +19,19 @@ cd "$PROJECT_DIR"
 echo "Project directory: $PROJECT_DIR"
 echo ""
 
-# Check if virtual environment exists
-if [ ! -d "venv" ] && [ ! -d ".venv" ]; then
-    echo "❌ Virtual environment not found!"
-    echo "Creating virtual environment..."
-    python3 -m venv .venv
-    echo "✅ Virtual environment created"
-    echo ""
+# Check if virtual environment exists and recreate if needed
+if [ -d ".venv" ] || [ -d "venv" ]; then
+    echo "Existing virtual environment found, removing to avoid outdated dependencies..."
+    rm -rf .venv venv
 fi
 
+echo "Creating virtual environment..."
+python3 -m venv .venv
+echo "✅ Virtual environment created"
+echo ""
+
 # Activate virtual environment
-if [ -d ".venv" ]; then
-    VENV_DIR=".venv"
-else
-    VENV_DIR="venv"
-fi
+VENV_DIR=".venv"
 
 echo "Activating virtual environment..."
 source "$VENV_DIR/bin/activate"
@@ -56,25 +54,31 @@ else
 fi
 echo ""
 
-# Check for API keys
-if [ -z "$OPENAI_API_KEY" ]; then
-    echo "⚠️  WARNING: OPENAI_API_KEY environment variable is not set!"
-    echo "   Some features may not work without API keys."
-    echo "   Set it with: export OPENAI_API_KEY='your-key-here'"
-    echo ""
-fi
-
 # Enable CORS headers for web applications
 export AGENT_ALLOW_CORS_HEADERS=1
 echo "✅ CORS headers enabled"
 echo ""
 
+# Check if port is already in use
+PORT=${AGENT_HTTP_PORT:-8080}
+if lsof -Pi :$PORT -sTCP:LISTEN -t >/dev/null 2>&1 ; then
+    echo "❌ ERROR: Port $PORT is already in use!"
+    echo ""
+    echo "To see what's using the port:"
+    echo "  lsof -i :$PORT"
+    echo ""
+    echo "To stop the process using the port:"
+    echo "  kill \$(lsof -t -i :$PORT)"
+    echo ""
+    exit 1
+fi
+
 # Start the server
 echo "==============================================="
-echo "  Starting Neuro-SAN Server on port 8080"
+echo "  Starting Neuro SAN Server on port $PORT"
 echo "==============================================="
 echo ""
-echo "Server will be available at: http://localhost:8080"
+echo "Server will be available at: http://localhost:$PORT"
 echo "Press Ctrl+C to stop the server"
 echo ""
 

@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Neuro-SAN Client Startup Script for macOS/Linux
-# This script starts the neuro-san CLI client
+# Neuro SAN Client quick start Script for macOS/Linux
+# This script starts the Neuro SAN CLI client
 
 set -e
 
 echo "==============================================="
-echo "  Neuro-SAN Client Startup"
+echo "  Neuro SAN Client quick start"
 echo "==============================================="
 echo ""
 

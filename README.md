@@ -44,11 +44,17 @@ Neuro SAN also offers:
 
 ## Quick Start
 
-**🚀 For the easiest way to get started, use our automated startup scripts!**
+**🚀 For the easiest way to get started, use our automated quick start scripts!**
 
-See the [startup/README.md](startup/README.md) for simple one-command scripts that handle all setup automatically:
-- **macOS/Linux:** `./startup/start-server.sh`
-- **Windows:** `startup\start-server.bat`
+See the [quick-start/README.md](quick-start/README.md) for simple one-command scripts that handle all setup automatically:
+- **macOS/Linux:** `./quick-start/start-server.sh`
+- **Windows:** `quick-start\start-server.bat`
+
+### Prerequisites
+
+Before running the quick start scripts, ensure you have:
+- You have Python 3.12 or better installed on your machine
+- You have virtual environment support for Python installed (typically included with Python 3.12+)
 
 These scripts automatically:
 - Create and activate virtual environment
