@@ -154,7 +154,7 @@ class BaseToolFactory:
         # By default, assume no allowed tools. This may get updated below or in the LangChainMcpAdadter.
         allowed_tools: List[str] = None
         # Get HTTP headers from sly_data if available
-        http_headers: Dict[str, Any] = self.tool_caller.sly_data.get("http_headers", {})
+        http_headers: Dict[str, Any] = self.tool_caller.get_sly_data().get("http_headers", {})
 
         if isinstance(mcp_info, str):
             server_url: str = mcp_info
